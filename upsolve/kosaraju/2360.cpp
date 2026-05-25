@@ -57,45 +57,72 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-// 173. Binary Search Tree Iterator [Medium]
-#ifdef LOCAL
-struct TreeNode {
-    int val;
-    TreeNode *left;
-    TreeNode *right;
-    TreeNode() : val(0), left(nullptr), right(nullptr) {}
-    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
-    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
-};
-#endif
+const int MAXNODES = 1e5+5;
 
-class BSTIterator {
+vi g[MAXNODES], gT[MAXNODES];
+vi order;
+int vis[MAXNODES], id[MAXNODES];
+
+void dfs1(int u) {
+    vis[u] = 1;
+    for (int v : g[u]) {
+        if (!vis[v]) dfs1(v);
+    }
+    order.pb(u);
+}
+
+void dfs2(int u, int comp) {
+    vis[u] = 1;
+    for (int v : gT[u]) {
+        if (!vis[v]) dfs2(v, comp);
+    }
+    id[u] = comp;
+}
+
+// 2360. Longest Cycle in a Graph [Hard]
+class Solution {
 public:
-    stack<TreeNode*> st;
+    int longestCycle(vi& edges) {
+        int n = (int)edges.size();
 
-    BSTIterator(TreeNode* root) {
-        inorder(root);
-    }
+        REP(i, n) {
+            g[i].clear();
+            gT[i].clear();
+        }
+        order.clear();
 
-    void inorder(TreeNode* node) {
-        TreeNode* ptr = node;
-        while (ptr != nullptr) {
-            st.push(ptr);
-            ptr = ptr->left;
+        REP(i, n) {
+            int ci = edges[i];
+            if (ci != -1) {
+                g[i].pb(ci);
+                gT[ci].pb(i);
+            }
         }
-    }
-    
-    int next() {
-        TreeNode* node = st.top();
-        st.pop();
-        if (node->right) {
-            inorder(node->right);
+
+        memset(id, -1, sizeof id);
+
+        memset(vis, 0, sizeof vis);
+        REP(i, n) {
+            if (!vis[i]) dfs1(i);
         }
-        return node->val;
-    }
-    
-    bool hasNext() {
-        return !st.empty();
+
+        memset(vis, 0, sizeof vis);
+        reverse(order.begin(), order.end());
+        int comp = 0;
+        for (int u : order) {
+            if (!vis[u]) {
+                comp++;
+                dfs2(u, comp);
+            }
+        }
+
+        int ans = -1;
+        map<int,int> f;
+        REP(i, n) {
+            f[id[i]]++;
+            if (f[id[i]] > 1) ans = max(ans, f[id[i]]);
+        }
+        return ans;
     }
 };
 

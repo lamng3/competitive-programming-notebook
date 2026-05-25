@@ -58,22 +58,20 @@ const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
 const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 21;
+const int MAXSTEPS = 25;
 
-int anc[MAXNODES][MAXSTEPS];
+int lift[MAXNODES][MAXSTEPS];
 
 // 1483. Kth Ancestor of a Tree Node [Hard]
 class TreeAncestor {
 public:
     TreeAncestor(int n, vi& parent) {
-        memset(anc, -1, sizeof anc);
-        REP(i, n) {
-            anc[i][0] = parent[i];
-        }
-        FOR(j, 1, MAXSTEPS-1) {
+        memset(lift, -1, sizeof lift);
+        REP(i, n) lift[i][0] = parent[i];
+        FOR(j, 1, MAXSTEPS) {
             REP(i, n) {
-                if (anc[i][j-1] != -1) {
-                    anc[i][j] = anc[anc[i][j-1]][j-1];
+                if (lift[i][j-1] != -1) {
+                    lift[i][j] = lift[lift[i][j-1]][j-1];
                 }
             }
         }
@@ -82,7 +80,7 @@ public:
     int getKthAncestor(int node, int k) {
         REP(j, MAXSTEPS) {
             if (k & (1 << j)) {
-                node = anc[node][j];
+                node = lift[node][j];
                 if (node == -1) break;
             }
         }
