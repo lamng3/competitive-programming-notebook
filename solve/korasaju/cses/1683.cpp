@@ -57,35 +57,11 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 25;
-
-int lift[MAXNODES][MAXSTEPS];
-
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+class Solution {
+// LeetCode method function
+// void solve() {}
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
-                }
-            }
-        }
-    }
-    
-    int getKthAncestor(int node, int k) {
-        REP(j, MAXSTEPS) {
-            if (k & (1 << j)) {
-                node = lift[node][j];
-                if (node == -1) break;
-            }
-        }
-        return node;
-    }
+
 };
 
 #if !defined(CPTEST) && (defined(LOCAL) || defined(ONLINE_JUDGE))
@@ -93,9 +69,59 @@ void preprocess() {
     
 }
 
+const int MAXN = 1e5+5;
+
+vi g[MAXN], gT[MAXN];
+vi order;
+int vis[MAXN], id[MAXN];
+
+void dfs1(int u) {
+    vis[u] = 1;
+    for (int v : g[u]) {
+        if (!vis[v]) dfs1(v);
+    }
+    order.pb(u);
+}
+
+void dfs2(int u, int k) {
+    vis[u] = 1;
+    for (int v : gT[u]) {
+        if (!vis[v]) dfs2(v, k);
+    }
+    id[u] = k;
+}
+
 // cout << Solution().solve() << '\n';
 void solve() {
-    
+    int n, m;
+    cin >> n >> m;
+
+    REP(i, m) {
+        int a, b;
+        cin >> a >> b;
+        g[a].pb(b);
+        gT[b].pb(a);
+    }
+
+    memset(id, -1, sizeof id);
+
+    memset(vis, 0, sizeof vis);
+    FOR(i, 1, n) {
+        if (!vis[i]) dfs1(i);
+    }
+
+    memset(vis, 0, sizeof vis);
+    reverse(order.begin(), order.end());
+    int k = 0;
+    for (int i : order) {
+        if (!vis[i]) {
+            k++;
+            dfs2(i, k);
+        }
+    }
+
+    cout << k << '\n';
+    FOR(i, 1, n) cout << id[i] << (i == n ? '\n' : ' ');
 }
 
 int main() {

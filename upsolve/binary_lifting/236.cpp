@@ -57,34 +57,95 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
+// 236. Lowest Common Ancestor of a Binary Tree [Medium]
+#ifdef LOCAL
+struct TreeNode {
+    int val;
+    TreeNode *left;
+    TreeNode *right;
+    TreeNode() : val(0), left(nullptr), right(nullptr) {}
+    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+};
+#endif
+
+const int MAXNODES = 1e5+5;
 const int MAXSTEPS = 25;
 
-int lift[MAXNODES][MAXSTEPS];
+map<TreeNode*, map<int, TreeNode*>> lift;
+vector<TreeNode*> euler;
 
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+map<TreeNode*, TreeNode*> parent;
+map<TreeNode*, int> depth;
+
+class Solution {
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
+    void flatten(TreeNode* node, int d) {
+        if (!node) return;
+        depth[node] = d;
+        euler.pb(node);
+        if (node->left) {
+            parent[node->left] = node;
+            flatten(node->left, d+1);
+        }
+        if (node->right) {
+            parent[node->right] = node;
+            flatten(node->right, d+1);
+        }
+    }
+
+    void buildLift() {
+        int n = (int)euler.size();
+
+        REP(i, n) {
+            REP(j, MAXSTEPS) {
+                lift[euler[i]][j] = nullptr;
+            }
+        }
+
+        REP(i, n) lift[euler[i]][0] = parent[euler[i]];
+
         FOR(j, 1, MAXSTEPS) {
             REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
+                if (lift[euler[i]][j-1] != nullptr) {
+                    lift[euler[i]][j] = lift[lift[euler[i]][j-1]][j-1];
                 }
             }
         }
     }
-    
-    int getKthAncestor(int node, int k) {
+
+    TreeNode* liftK(TreeNode* node, int k) {
+        if (!node) return node;
         REP(j, MAXSTEPS) {
             if (k & (1 << j)) {
                 node = lift[node][j];
-                if (node == -1) break;
+                if (node == nullptr) break;                
             }
         }
         return node;
+    }
+
+    TreeNode* findLCA(TreeNode* p, TreeNode* q) {
+        if (depth[p] < depth[q]) swap(p, q);
+        // p is deeper than q
+        int K = depth[p] - depth[q];
+        p = liftK(p, K);
+        if (p == q) return p;
+        RFOR(j, MAXSTEPS) {
+            if (lift[p][j] != lift[q][j]) {
+                p = lift[p][j];
+                q = lift[q][j];
+            }
+        }
+        return lift[p][0];
+    }
+
+    TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {
+        parent[root] = nullptr;
+        flatten(root, 0);
+        buildLift();
+        TreeNode* ans = findLCA(p, q);
+        return ans;
     }
 };
 

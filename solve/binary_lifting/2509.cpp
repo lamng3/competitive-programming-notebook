@@ -57,34 +57,64 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 25;
+// 2^30 ~ 1e9
+// relationships: i -> (i*2) and (i*2+1)
+// LCA(a, b) -> depth a and b
 
-int lift[MAXNODES][MAXSTEPS];
-
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+// 2509. Cycle Length Queries in a Tree [Hard]
+class Solution {
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
-                }
-            }
+    int depth(int a) {
+        int res = 0;
+        while (a) {
+            res++;
+            a >>= 1;
         }
+        return res;
     }
-    
-    int getKthAncestor(int node, int k) {
-        REP(j, MAXSTEPS) {
-            if (k & (1 << j)) {
-                node = lift[node][j];
-                if (node == -1) break;
+
+    int lift(int a, int k) {
+        REP(i, k) {
+            a >>= 1;
+            if (a == 0) break;
+        }
+        return a;
+    }
+
+    int query(int n, int a, int b) {
+        int da = depth(a);
+        int db = depth(b);
+        int K = abs(da - db);
+        if (da < db) swap(a, b);
+
+        int res = 1; // included new edge added
+
+        res += K;
+        a = lift(a, K);
+
+        if (a == b) return res;
+
+        // LCA(a, b)
+        for (int k = n; k >= 1; k--) {
+            if (lift(a, k) != lift(b, k)) {
+                a = lift(a, k);
+                b = lift(b, k);
+                res += 2 * k;
             }
         }
-        return node;
+
+        // 1 more lift
+        return res + 2;
+    }
+
+    vi cycleLengthQueries(int n, vii& queries) {
+        int m = (int)queries.size();
+        vi ans(m, 0);
+        REP(i, m) {
+            int a = queries[i][0], b = queries[i][1];
+            ans[i] = query(n, a, b);
+        }
+        return ans;
     }
 };
 

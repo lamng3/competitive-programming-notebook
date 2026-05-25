@@ -57,34 +57,38 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 25;
-
-int lift[MAXNODES][MAXSTEPS];
-
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+// 396. Rotate Function [Medium]
+class Solution {
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
-                }
-            }
+    // sliding window + prefix sum optimize to O(N)
+    // when slide, - (pref[R] - pref[L-1]) + (n-1) * A[R+1]
+    int maxRotateFunction(vi& nums) {
+        int n = (int)nums.size();
+        if (n == 1) return 0;
+
+        vi A(2 * n);
+        REP(i, n) A[i] = A[i+n] = nums[i];
+
+        vi pref(2 * n);
+        pref[0] = A[0];
+        FOR(i, 1, 2*n-1) pref[i] = pref[i-1] + A[i];
+
+        ll ans = -LLINF;
+
+        // 0 * A[0] + 1 * A[1] + ... + (n-1) * A[n-1]
+        ll S = 0;
+        REP(i, n) S += i * A[i];
+        ans = max(ans, S);
+
+        // pref[i-1] - pref[i-n] 
+        FOR(i, n, 2*n-1) {
+            int remove = pref[i-1] - pref[i-n];
+            int add = (n-1) * A[i];
+            S = S - remove + add;
+            ans = max(ans, S);
         }
-    }
-    
-    int getKthAncestor(int node, int k) {
-        REP(j, MAXSTEPS) {
-            if (k & (1 << j)) {
-                node = lift[node][j];
-                if (node == -1) break;
-            }
-        }
-        return node;
+
+        return (int)ans;
     }
 };
 

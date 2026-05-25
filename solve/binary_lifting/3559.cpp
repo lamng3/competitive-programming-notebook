@@ -55,29 +55,60 @@ const int INF = 1e9;
 const ll LLINF = 2e18;
 
 const int MOD = 1e9+7;
-const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
+const int MAXNODES = 1e5+5;
 const int MAXSTEPS = 25;
 
+vi g[MAXNODES];
 int lift[MAXNODES][MAXSTEPS];
+int depth[MAXNODES];
 
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+// 3559. Number of Ways to Assign Edge Weights II [Hard]
+class Solution {
+private:
+    ll binpow(ll a, ll b) {
+        a %= MOD;
+        ll res = 1;
+        while (b) {
+            if (b % 2) res = (res * a) % MOD;
+            a = (a * a) % MOD;
+            b >>= 1;
+        }
+        return res;
+    }
+
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
+    void buildTree(int n, const vii& edges) {
+        FOR(i, 0, n) g[i].clear();
+
+        for (auto& e : edges) {
+            int u = e[0], v = e[1];
+            g[u].pb(v);
+            g[v].pb(u);
+        }
+    }
+
+    void dfs(int u, int p, int d) {
+        depth[u] = d;
+        lift[u][0] = p;
+        for (int v : g[u]) {
+            if (v != p) {
+                dfs(v, u, d + 1);
+            }
+        }
+    }
+
+    void buildLift(int n) {
+        FOR(j, 1, MAXSTEPS - 1) {
+            FOR(i, 1, n) { 
+                if (lift[i][j - 1] != -1) {
+                    lift[i][j] = lift[lift[i][j - 1]][j - 1];
                 }
             }
         }
     }
-    
-    int getKthAncestor(int node, int k) {
+
+    int moveK(int node, int k) {
         REP(j, MAXSTEPS) {
             if (k & (1 << j)) {
                 node = lift[node][j];
@@ -86,21 +117,62 @@ public:
         }
         return node;
     }
+
+    int getLCA(int u, int v) {
+        if (depth[u] < depth[v]) swap(u, v);
+        
+        u = moveK(u, depth[u] - depth[v]);
+        if (u == v) return u;
+
+        RFOR(j, MAXSTEPS) {
+            if (lift[u][j] != lift[v][j] && lift[u][j] != -1) {
+                u = lift[u][j];
+                v = lift[v][j];
+            }
+        }
+        
+        return lift[u][0]; 
+    }
+
+    int pathLength(int u, int v) {
+        int lca = getLCA(u, v);
+        return depth[u] + depth[v] - 2 * depth[lca];
+    }
+
+    int query(int u, int v) {
+        int N = pathLength(u, v);
+        if (N == 0) return 0;
+        return binpow(2, N-1);
+    }
+
+    vi assignEdgeWeights(vii& edges, vii& queries) {
+        int n = edges.size() + 1;
+
+        memset(lift, -1, sizeof lift);
+        buildTree(n, edges);
+        
+        dfs(1, -1, 0);
+        buildLift(n);
+
+        int m = (int)queries.size();
+        vi ans(m);
+        REP(i, m) {
+            ans[i] = query(queries[i][0], queries[i][1]);
+        }
+        return ans;
+    }
 };
 
 #if !defined(CPTEST) && (defined(LOCAL) || defined(ONLINE_JUDGE))
 void preprocess() {
-    
+
 }
 
-// cout << Solution().solve() << '\n';
 void solve() {
-    
+
 }
 
 int main() {
-    // freopen("name.in", "r", stdin);
-    // freopen("name.out", "w", stdout);
     ios::sync_with_stdio(0);
     cin.tie(0);
     preprocess();

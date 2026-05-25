@@ -57,35 +57,11 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 25;
-
-int lift[MAXNODES][MAXSTEPS];
-
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+class Solution {
+// LeetCode method function
+// void solve() {}
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
-                }
-            }
-        }
-    }
-    
-    int getKthAncestor(int node, int k) {
-        REP(j, MAXSTEPS) {
-            if (k & (1 << j)) {
-                node = lift[node][j];
-                if (node == -1) break;
-            }
-        }
-        return node;
-    }
+
 };
 
 #if !defined(CPTEST) && (defined(LOCAL) || defined(ONLINE_JUDGE))
@@ -95,7 +71,22 @@ void preprocess() {
 
 // cout << Solution().solve() << '\n';
 void solve() {
-    
+    int n; cin >> n;
+
+    vi x(n);
+    REP(i, n) cin >> x[i];
+
+    vi dp;
+    for (int i : x) {
+        int pos = lower_bound(dp.begin(), dp.end(), i) - dp.begin();
+        if (pos == (int)dp.size()) {
+            dp.pb(i);
+        }
+        else {
+            dp[pos] = i;
+        }
+    }
+    cout << (int)dp.size() << '\n';
 }
 
 int main() {

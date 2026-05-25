@@ -57,35 +57,11 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 25;
-
-int lift[MAXNODES][MAXSTEPS];
-
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+class Solution {
+// LeetCode method function
+// void solve() {}
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
-                }
-            }
-        }
-    }
-    
-    int getKthAncestor(int node, int k) {
-        REP(j, MAXSTEPS) {
-            if (k & (1 << j)) {
-                node = lift[node][j];
-                if (node == -1) break;
-            }
-        }
-        return node;
-    }
+
 };
 
 #if !defined(CPTEST) && (defined(LOCAL) || defined(ONLINE_JUDGE))
@@ -93,9 +69,52 @@ void preprocess() {
     
 }
 
+const int MAXNODES = 1e6+5;
+int trie[MAXNODES][26];
+int nextnode;
+int stop[MAXNODES];
+
+void addWord(const string& w) {
+    int i = 0, v = 0;
+    for (char c : w) {
+        if (trie[v][c-'a'] == -1) {
+            trie[v][c-'a'] = nextnode++;
+        }
+        v = trie[v][c-'a'];
+    }
+    stop[v] = 1;
+}
+
 // cout << Solution().solve() << '\n';
 void solve() {
+    memset(trie, -1, sizeof trie);
+    nextnode = 1;
+    memset(stop, 0, sizeof stop);
+
+    string s; cin >> s;
+    int k; cin >> k;
+    REP(i, k) {
+        string w; cin >> w;
+        addWord(w);
+    }
+
+    int n = (int)s.size();
     
+    vector<ll> dp(n+1, 0);
+    dp[0] = 1;
+
+    for (int L = 0; L < n; L++) {
+        if (dp[L] == 0) continue;
+        int v = 0;
+        for (int R = L; R < n; R++) {
+            // s[L..R]
+            if (trie[v][s[R]-'a'] == -1) break;
+            v = trie[v][s[R]-'a'];
+            if (stop[v]) dp[R+1] = (dp[R+1] + dp[L]) % MOD;
+        }
+    }
+
+    cout << dp[n] << '\n';
 }
 
 int main() {

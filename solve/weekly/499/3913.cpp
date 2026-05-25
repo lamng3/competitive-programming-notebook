@@ -57,34 +57,53 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 25;
-
-int lift[MAXNODES][MAXSTEPS];
-
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+// 3913. Sort Vowels by Frequency [Medium]
+class Solution {
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
-                }
-            }
-        }
+    char vowels[5] = { 'a', 'e', 'u', 'o', 'i' };
+
+    bool isvowel(char c) {
+        for (auto& v : vowels) if (c == v) return true;
+        return false;
     }
-    
-    int getKthAncestor(int node, int k) {
-        REP(j, MAXSTEPS) {
-            if (k & (1 << j)) {
-                node = lift[node][j];
-                if (node == -1) break;
-            }
+
+    string sortVowels(string s) {
+        int n = (int)s.size();
+
+        map<int,int> pos;
+        map<int,int> f;
+
+        for (int i = 0; i < n; i++) {
+            char c = s[i];
+            if (isvowel(c)) {
+                if (!pos.count(c-'a')) pos[c-'a'] = i;
+                f[c-'a']++;
+            }           
         }
-        return node;
+
+        array<int,3> V[5];
+        for (int i = 0; i < 5; i++) {
+            V[i] = {f[vowels[i]-'a'], pos[vowels[i]-'a'], vowels[i]-'a'};
+        }
+
+        auto cmp = [&](const array<int,3>& a, const array<int,3>& b) {
+            if (a[0] == b[0]) return a[1] < b[1];
+            return a[0] > b[0];
+        };
+        sort(begin(V), end(V), cmp);
+
+        string ans = "";
+        int id = 0;
+        for (int i = 0; i < n; i++) {
+            if (!isvowel(s[i])) {
+                ans += s[i];
+                continue;
+            }
+            char c = 'a' + V[id][2];
+            ans += c;
+            if (--V[id][0] <= 0) id++;
+        }
+        return ans;
     }
 };
 

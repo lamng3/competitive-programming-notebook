@@ -57,34 +57,74 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 25;
+const int MAXN = 1e5+5;
 
-int lift[MAXNODES][MAXSTEPS];
+vi g[MAXN], gT[MAXN]; // gT = transpose of graph
+vi order;
+int vis[MAXN], id[MAXN];
 
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
-public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
-                }
-            }
-        }
+void dfs1(int u) {
+    vis[u] = 1;
+    for (int v : g[u]) {
+        if (!vis[v]) dfs1(v);
     }
-    
-    int getKthAncestor(int node, int k) {
-        REP(j, MAXSTEPS) {
-            if (k & (1 << j)) {
-                node = lift[node][j];
-                if (node == -1) break;
+    order.pb(u);
+}
+
+void dfs2(int u, int comp) {
+    vis[u] = 1;
+    for (int v : gT[u]) {
+        if (!vis[v]) dfs2(v, comp);
+    }
+    id[u] = comp;
+}
+
+// 2360. Longest Cycle in a Graph [Hard]
+class Solution {
+public:
+    int longestCycle(vi& edges) {
+        int n = (int)edges.size();
+
+        order.clear(); 
+        for (int i = 0; i < n; i++) {
+            g[i].clear();
+            gT[i].clear();
+            vis[i] = 0;
+            id[i] = -1;
+        }
+
+        REP(i, n) {
+            if (edges[i] != -1) {
+                g[i].pb(edges[i]);
+                gT[edges[i]].pb(i);
             }
         }
-        return node;
+
+        memset(vis, 0, sizeof vis);
+        REP(u, n) {
+            if (!vis[u]) dfs1(u);
+        }
+        
+        memset(vis, 0, sizeof vis);
+        reverse(order.begin(), order.end());
+        int comp = 0;
+        for (int u : order) {
+            if (!vis[u]) {
+                comp++;
+                dfs2(u, comp);
+            }
+        }
+
+        // dbg(order);
+        // REP(i, n) dbg(i, id[i]);
+
+        int ans = -1;
+        map<int,int> f;
+        REP(i, n) {
+            f[id[i]]++;
+            if (f[id[i]] > 1) ans = max(ans, f[id[i]]);
+        }
+        return ans;
     }
 };
 

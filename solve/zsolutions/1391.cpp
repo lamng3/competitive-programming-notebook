@@ -57,34 +57,76 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 25;
+int di[4] = {1,0,-1,0};
+int dj[4] = {0,1,0,-1};
 
-int lift[MAXNODES][MAXSTEPS];
-
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+// 1391. Check if There is a Valid Path in a Grid [Medium]
+class Solution {
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
+    vii transform(int x) {
+        if (x == 1) return {{0,0,0},{1,1,1},{0,0,0}};
+        if (x == 2) return {{0,1,0},{0,1,0},{0,1,0}};
+        if (x == 3) return {{0,0,0},{1,1,0},{0,1,0}};
+        if (x == 4) return {{0,0,0},{0,1,1},{0,1,0}};
+        if (x == 5) return {{0,1,0},{1,1,0},{0,0,0}};
+        if (x == 6) return {{0,1,0},{0,1,1},{0,0,0}};
+        return {{0,0,0},{0,0,0},{0,0,0}};
+    }
+
+    bool inrange(int i, int j, int M, int N) {
+        return 0 <= i && i < M && 0 <= j && j < N;
+    }
+
+    void floodfill(int i, int j, int M, int N, vii& g) {
+        if (!inrange(i, j, M, N) || g[i][j] != 1) return;
+        g[i][j] = 2;
+        for (int k = 0; k < 4; k++) {
+            int ni = i + di[k], nj = j + dj[k];
+            floodfill(ni, nj, M, N, g);
+        }
+    }
+
+    bool hasValidPath(vii& grid) {
+        int m = (int)grid.size(), n = (int)grid[0].size();
+        int M = 3*m, N = 3*n;
+
+        vii g(M, vi(N, 0));
+        REP(i, m) {
+            REP(j, n) {
+                vii cell = transform(grid[i][j]);
+                REP(ii, 3) {
+                    REP(jj, 3) {
+                        g[i*3+ii][j*3+jj] = cell[ii][jj];
+                    }
                 }
             }
         }
-    }
-    
-    int getKthAncestor(int node, int k) {
-        REP(j, MAXSTEPS) {
-            if (k & (1 << j)) {
-                node = lift[node][j];
-                if (node == -1) break;
+
+        // floodfill from first cell
+        int si = -1, sj = -1;
+        REP(i, 3) {
+            REP(j, 3) {
+                if (g[i][j]) {
+                    si = i;
+                    sj = j;
+                    break;
+                }
             }
         }
-        return node;
+
+        floodfill(si, sj, M, N, g);
+
+        bool ok = false;
+        // (3 * (m-1), 3 * (n-1))
+        REP(i, 3) {
+            REP(j, 3) {
+                if (g[3*(m-1)+i][3*(n-1)+j]) {
+                    ok = true;
+                    break;
+                }
+            }
+        }
+        return ok;
     }
 };
 

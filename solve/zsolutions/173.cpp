@@ -57,34 +57,47 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 25;
+const int MAX_KK = 1e5;
 
-int lift[MAXNODES][MAXSTEPS];
+// 173. Binary Search Tree Iterator [Medium]
+#ifdef LOCAL
+struct TreeNode {
+    int val;
+    TreeNode *left;
+    TreeNode *right;
+    TreeNode() : val(0), left(nullptr), right(nullptr) {}
+    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+};
+#endif
 
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+class BSTIterator {
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
-                }
-            }
+    stack<TreeNode*> st;
+
+    BSTIterator(TreeNode* root) {
+        inorder(root);
+    }
+
+    void inorder(TreeNode* node) {
+        TreeNode* ptr = node;
+        while (ptr != nullptr) {
+            st.push(ptr);
+            ptr = ptr->left;
         }
     }
     
-    int getKthAncestor(int node, int k) {
-        REP(j, MAXSTEPS) {
-            if (k & (1 << j)) {
-                node = lift[node][j];
-                if (node == -1) break;
-            }
+    int next() {
+        TreeNode* node = st.top();
+        st.pop();
+        if (node->right) {
+            inorder(node->right);
         }
-        return node;
+        return node->val;
+    }
+    
+    bool hasNext() {
+        return !st.empty();
     }
 };
 

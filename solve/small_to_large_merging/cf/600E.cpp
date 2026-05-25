@@ -57,35 +57,11 @@ const ll LLINF = 2e18;
 const int MOD = 1e9+7;
 const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
-const int MAXNODES = 5e4+5;
-const int MAXSTEPS = 25;
-
-int lift[MAXNODES][MAXSTEPS];
-
-// 1483. Kth Ancestor of a Tree Node [Hard]
-class TreeAncestor {
+class Solution {
+// LeetCode method function
+// void solve() {}
 public:
-    TreeAncestor(int n, vi& parent) {
-        memset(lift, -1, sizeof lift);
-        REP(i, n) lift[i][0] = parent[i];
-        FOR(j, 1, MAXSTEPS) {
-            REP(i, n) {
-                if (lift[i][j-1] != -1) {
-                    lift[i][j] = lift[lift[i][j-1]][j-1];
-                }
-            }
-        }
-    }
-    
-    int getKthAncestor(int node, int k) {
-        REP(j, MAXSTEPS) {
-            if (k & (1 << j)) {
-                node = lift[node][j];
-                if (node == -1) break;
-            }
-        }
-        return node;
-    }
+
 };
 
 #if !defined(CPTEST) && (defined(LOCAL) || defined(ONLINE_JUDGE))
@@ -93,9 +69,58 @@ void preprocess() {
     
 }
 
+const int MAX_N = 1e5+5;
+
+vi Adj[MAX_N];
+map<int,int> nodes[MAX_N];
+map<int,ll> bucket[MAX_N];
+int dom[MAX_N];
+ll ans[MAX_N];
+
+void merge(int u, int v) {
+    if (nodes[u].size() < nodes[v].size()) {
+        swap(nodes[u], nodes[v]);
+        swap(bucket[u], bucket[v]);
+        swap(dom[u], dom[v]);
+    }
+    for (auto [color, cnt] : nodes[v]) {
+        int f = nodes[u][color];
+        if (f > 0) bucket[u][f] -= color;
+        // add to map
+        nodes[u][color] += cnt;
+        bucket[u][nodes[u][color]] += color;
+        dom[u] = max(dom[u], nodes[u][color]);
+    }
+}
+
+void dfs(int u, int p) {
+    for (int v : Adj[u]) {
+        if (v == p) continue;
+        dfs(v, u);
+        merge(u, v);
+    }
+    ans[u] = bucket[u][dom[u]];
+    // dbg(u);
+    // dbg(nodes[u]);
+}
+
 // cout << Solution().solve() << '\n';
 void solve() {
-    
+    int n; cin >> n;
+    REP(i, n) {
+        int c; cin >> c;
+        nodes[i+1][c] = 1;
+        dom[i+1] = 1;
+        bucket[i+1][1] = c;
+    }
+    REP(i, n-1) {
+        int x, y;
+        cin >> x >> y;
+        Adj[x].pb(y);
+        Adj[y].pb(x);
+    }
+    dfs(1, 0);
+    REP(i, n) cout << ans[i+1] << (i+1 == n ? '\n' : ' ');
 }
 
 int main() {
