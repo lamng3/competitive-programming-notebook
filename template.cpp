@@ -28,6 +28,18 @@ ostream& operator<<(ostream& os, const map<K,V>& m) {
     for (auto& [k, v] : m) os << (i++ ? ", " : "") << k << ": " << v;
     return os << "}";
 }
+template<typename T>
+ostream& operator<<(ostream& os, queue<T> q) {
+    os << "[";
+    bool first = true;
+    while (!q.empty()) {
+        if (!first) os << ", ";
+        os << q.front();
+        q.pop();
+        first = false;
+    }
+    return os << "]";
+}
 void _dbg() { cerr << endl; }
 template<typename T, typename... A>
 void _dbg(T t, A... a) { cerr << " " << t; if constexpr(sizeof...(a)) cerr << ","; _dbg(a...); }
@@ -51,11 +63,8 @@ using pii = pair<int, int>;
 #define se second
 #define pb push_back
 
-const int INF = 1e9;
-const ll LLINF = 2e18;
-
+const int INF = 1e9+7;
 const int MOD = 1e9+7;
-const int MOD_NTT = 998244353; // number theoretic transform (NTT)
 
 class Solution {
 // LeetCode method function

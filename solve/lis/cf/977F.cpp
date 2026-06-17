@@ -69,21 +69,41 @@ void preprocess() {
     
 }
 
+int n;
+vi a;
+
 // cout << Solution().solve() << '\n';
 void solve() {
-    int n; cin >> n;
-    vi tow;
+    cin >> n;
+    
+    a.assign(n, 0);
+    REP(i, n) cin >> a[i];
+    
+    map<int, int> dp;
+    int mx = 0;
+    int last = -1;
+
     REP(i, n) {
-        int k; cin >> k;
-        int j = upper_bound(tow.begin(), tow.end(), k) - tow.begin();
-        if (j == tow.size()) {
-            tow.pb(k);
-        }
-        else {
-            tow[j] = k;
+        dp[a[i]] = dp[a[i]-1] + 1;
+        if (dp[a[i]] > mx) {
+            mx = dp[a[i]];
+            last = a[i];
         }
     }
-    cout << (int)tow.size() << '\n';
+
+    cout << mx << '\n';
+
+    vi ans;
+    int target = last - mx + 1;
+
+    REP(i, n) {
+        if (a[i] == target) {
+            ans.pb(i+1);
+            target++;
+        }
+    }
+
+    REP(i, mx) cout << ans[i] << (i == mx-1 ? '\n' : ' ');
 }
 
 int main() {

@@ -28,6 +28,18 @@ ostream& operator<<(ostream& os, const map<K,V>& m) {
     for (auto& [k, v] : m) os << (i++ ? ", " : "") << k << ": " << v;
     return os << "}";
 }
+template<typename T>
+ostream& operator<<(ostream& os, queue<T> q) {
+    os << "[";
+    bool first = true;
+    while (!q.empty()) {
+        if (!first) os << ", ";
+        os << q.front();
+        q.pop();
+        first = false;
+    }
+    return os << "]";
+}
 void _dbg() { cerr << endl; }
 template<typename T, typename... A>
 void _dbg(T t, A... a) { cerr << " " << t; if constexpr(sizeof...(a)) cerr << ","; _dbg(a...); }
@@ -51,7 +63,7 @@ using pii = pair<int, int>;
 #define se second
 #define pb push_back
 
-const int INF = 1e9;
+const int INF = 1e9+7;
 const ll LLINF = 2e18;
 
 const int MOD = 1e9+7;
@@ -71,19 +83,22 @@ void preprocess() {
 
 // cout << Solution().solve() << '\n';
 void solve() {
-    int n; cin >> n;
-    vi tow;
-    REP(i, n) {
-        int k; cin >> k;
-        int j = upper_bound(tow.begin(), tow.end(), k) - tow.begin();
-        if (j == tow.size()) {
-            tow.pb(k);
-        }
-        else {
-            tow[j] = k;
-        }
+    int n, k; cin >> n >> k;
+    string s; cin >> s;
+
+    vii buc(k, vi(2, 0));
+    REP(i, n) buc[i%k][s[i]-'0']++;
+
+    // dbg(buc);
+
+    bool ok = true;
+    REP(i, k) {
+        if (buc[i][1] % 2 == 0) continue;
+        ok = false;
+        break;
     }
-    cout << (int)tow.size() << '\n';
+
+    cout << (ok ? "YES" : "NO") << '\n';
 }
 
 int main() {
@@ -93,7 +108,7 @@ int main() {
     cin.tie(0);
     preprocess();
     int tt = 1;
-    // cin >> tt;
+    cin >> tt;
     while (tt--) solve();
     return 0;
 }
