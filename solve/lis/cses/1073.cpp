@@ -72,7 +72,18 @@ void preprocess() {
 // cout << Solution().solve() << '\n';
 void solve() {
     int n; cin >> n;
-    
+    vi tow;
+    REP(i, n) {
+        int k; cin >> k;
+        int j = upper_bound(tow.begin(), tow.end(), k) - tow.begin();
+        if (j == tow.size()) {
+            tow.pb(k);
+        }
+        else {
+            tow[j] = k;
+        }
+    }
+    cout << (int)tow.size() << '\n';
 }
 
 int main() {

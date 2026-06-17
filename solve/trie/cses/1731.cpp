@@ -28,6 +28,18 @@ ostream& operator<<(ostream& os, const map<K,V>& m) {
     for (auto& [k, v] : m) os << (i++ ? ", " : "") << k << ": " << v;
     return os << "}";
 }
+template<typename T>
+ostream& operator<<(ostream& os, queue<T> q) {
+    os << "[";
+    bool first = true;
+    while (!q.empty()) {
+        if (!first) os << ", ";
+        os << q.front();
+        q.pop();
+        first = false;
+    }
+    return os << "]";
+}
 void _dbg() { cerr << endl; }
 template<typename T, typename... A>
 void _dbg(T t, A... a) { cerr << " " << t; if constexpr(sizeof...(a)) cerr << ","; _dbg(a...); }
@@ -51,7 +63,7 @@ using pii = pair<int, int>;
 #define se second
 #define pb push_back
 
-const int INF = 1e9;
+const int INF = 1e9+7;
 const ll LLINF = 2e18;
 
 const int MOD = 1e9+7;
@@ -69,64 +81,49 @@ void preprocess() {
     
 }
 
-const int MAXW = 1e6+5;
+const int MAX_W = 1e5+5;
 
-int trie[MAXW][26];
-int nextnode;
-int isleaf[MAXW];
+int wcount = 0;
+int trie[MAX_W][26];
+int stop[MAX_W];
+
+void add_word(string w) {
+    int v = 0;
+    for (char c : w) {
+        if (trie[v][c-'a'] == -1) {
+            trie[v][c-'a'] = ++wcount;
+        }
+        v = trie[v][c-'a'];
+    }
+    stop[v] = 1;
+}
 
 // cout << Solution().solve() << '\n';
 void solve() {
-    memset(trie, -1, sizeof trie);
-    nextnode = 1;
-    memset(isleaf, 0, sizeof isleaf);
-
-    auto addWord = [&](const string& w) {
-        int i = 0, v = 0;
-        while (i < w.size()) {
-            if (trie[v][w[i]-'a'] == -1) {
-                v = trie[v][w[i++]-'a'] = nextnode++;
-            }
-            else {
-                v = trie[v][w[i++]-'a'];
-            }
-        }
-        isleaf[v] = 1;
-    };
-
-    // auto searchWord = [&](const string& w) {
-    //     int i = 0, v = 0;
-    //     while (i < w.size()) {
-    //         if (trie[v][w[i]-'a'] == -1) {
-    //             return 0;
-    //         }
-    //         v = trie[v][w[i++]-'a'];
-    //     }
-    //     return isleaf[v];
-    // };
-
     string s; cin >> s;
-
     int k; cin >> k;
+
+    memset(trie, -1, sizeof trie);
+    memset(stop, 0, sizeof stop);
+
     REP(i, k) {
         string w; cin >> w;
-        addWord(w);
+        add_word(w);
     }
 
-    int n = (int)s.size();
-    
+    int n = s.size();
+
     vector<ll> dp(n+1, 0);
     dp[0] = 1;
 
-    for (int L = 0; L < n; L++) {
-        if (dp[L] == 0) continue;
+    // dp[i] = # ways to construct s[0..i-1]
+    REP(i, n) {
+        if (dp[i] == 0) continue;
         int v = 0;
-        // s[L..R]
-        for (int R = L+1; R <= n; R++) {
-            int c = s[R - 1] - 'a';
-            if (trie[v][c] == -1) break; 
-            v = trie[v][c];
-            if (isleaf[v]) dp[R] = (dp[R] + dp[L]) % MOD;
+        FOR(j, i, n-1) {
+            if (trie[v][s[j]-'a'] == -1) break;
+            v = trie[v][s[j]-'a'];
+            if (stop[v]) dp[j+1] = (dp[j+1] + dp[i]) % MOD;
         }
     }
 
