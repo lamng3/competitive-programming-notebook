@@ -18,14 +18,6 @@ using pii = pair<int, int>;
 const int INF = 1e9+7;
 const int MOD = 1e9+7;
 
-class Solution {
-// LeetCode method function
-// void solve() {}
-public:
-
-};
-
-// cout << Solution().solve() << '\n';
 void solve() {
     
 }
