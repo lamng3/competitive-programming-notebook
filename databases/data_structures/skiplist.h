@@ -1,5 +1,9 @@
+/*
+HW: show that memory references of a node is consistent
+*/
 #pragma once
 #include <bits/stdc++.h>
+#include "utils/hash.h"
 using namespace std;
 
 class SkipList {
@@ -70,6 +74,8 @@ public:
         https://www.cs.cmu.edu/~ckingsf/bioinfo-lectures/skiplists.pdf (slides 20)
             each node is 1 address referenced many times with the pointers
                 1 big node, instead of fragmented copies of a node
+            we will be adding the node to the levels as high as max of 2 neighbors
+                or we have reached maximum level of the node
     */
     void insert(int key, int value) {
         Node* curr = head;
@@ -86,7 +92,7 @@ public:
         curr = curr->next[0];
 
         if (curr != nullptr && curr->key == key) {
-            curr->key = value;
+            curr->value = value;
             // We don't propagate changes up because SkipList
             // only update in a single place (leaf node)
             return;
@@ -103,7 +109,7 @@ public:
 
         Node* newNode = new Node(key, value, node_lvl);
 
-        for (int i = 0; i <= curr_mx_lvl; i++) {
+        for (int i = 0; i <= node_lvl; i++) {
             Node* nxt = left[i]->next[i];
             left[i]->next[i] = newNode;
             newNode->next[i] = nxt;
