@@ -11,6 +11,9 @@ using pii = pair<int, int>;
 #define FORD(i, a, b) for (int i = (a); i >= (b); i--)
 #define RFOR(i, n) for (int i = (n) - 1; i >= 0; i--)
 
+#define all(x) (x).begin(), (x).end()
+#define sz(x) (int)((x).size())
+
 #define fi first
 #define se second
 #define pb push_back
@@ -18,10 +21,28 @@ using pii = pair<int, int>;
 const int INF = 1e9+7;
 const int MOD = 1e9+7;
 
-mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+void preprocess() {
+    
+}
 
 void solve() {
-    
+    int n, m; cin >> n >> m;
+    vi a(n);
+    REP(i,n) cin >> a[i];
+    vi b(m);
+    REP(i,m) cin >> b[i];
+    /* 
+        a[i] .. b[j]
+        1) a[i] can reduce to a[i+1]-1 then jump to a[i+1]
+        2) b[j] can reduce to b[j+1]-1 then jump to b[j+1]
+        3) min(a[i] - a[i+1] + 1, b[j] - b[j+1] + 1)
+        4) until i reaches n-1 or j reaches m-1
+    */
+    int sa = 0, sb = 0;
+    REP(i,n) sa += i < n-1 ? (a[i] - a[i+1] + 1) : a[i];
+    REP(i,m) sb += i < m-1 ? (b[i] - b[i+1] + 1) : b[i];
+    cout << (sa >= sb ? 1 : 2) << '\n';
+    return;
 }
 
 int main() {
@@ -29,8 +50,9 @@ int main() {
     // freopen("name.out", "w", stdout);
     ios::sync_with_stdio(0);
     cin.tie(0);
+    preprocess();
     int tt = 1;
-    // cin >> tt;
+    cin >> tt;
     while (tt--) solve();
     return 0;
 }

@@ -59,6 +59,9 @@ using pii = pair<int, int>;
 #define FORD(i, a, b) for (int i = (a); i >= (b); i--)
 #define RFOR(i, n) for (int i = (n) - 1; i >= 0; i--)
 
+#define all(x) (x).begin(), (x).end()
+#define sz(x) (int)((x).size())
+
 #define fi first
 #define se second
 #define pb push_back
@@ -80,7 +83,17 @@ void preprocess() {
 
 // cout << Solution().solve() << '\n';
 void solve() {
-    
+    int n; cin >> n;
+    vi h(n);
+    REP(i, n) cin >> h[i];
+    vi dp(n, INF);
+    dp[0] = 0;
+    dp[1] = abs(h[1] - h[0]);
+    FOR(i, 2, n-1) {
+        dp[i] = min(dp[i], dp[i-1] + abs(h[i] - h[i-1]));
+        dp[i] = min(dp[i], dp[i-2] + abs(h[i] - h[i-2]));
+    }
+    cout << dp[n-1] << '\n';
 }
 
 int main() {
