@@ -9,7 +9,7 @@ import urllib.parse
 import re
 import textwrap
 
-TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "template.cpp")
+TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "template1.cpp")
 SOLVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "solve")
 UPSOLVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "upsolve")
 
