@@ -1,6 +1,6 @@
-# competitive-programming
+# competitive-programming-setup
 
-Competitive programming workflow in C++.
+Competitive programming setup in C++.
 
 ![demo](assets/demo.gif)
 
@@ -65,7 +65,7 @@ Supports TreeNode and ListNode problems — struct definitions are auto-generate
 
 Clone the repo, then add to `~/.zshrc` (replace `<path>` with where you cloned it):
 ```zsh
-export CP_ROOT="<path>/competitive-programming"
+export CP_ROOT="<path>/competitive-programming-setup"
 
 cpbuild() {
     g++ -std=c++17 -DLOCAL -Wall -Wextra -Wshadow -fsanitize=address -fsanitize=undefined "$1" -o solution
