@@ -1,6 +1,6 @@
 # competitive-programming-setup
 
-Competitive programming setup in C++.
+Competitive programming setup in C++ and Python.
 
 ![demo](assets/demo.gif)
 
@@ -10,6 +10,7 @@ Competitive programming setup in C++.
 - `notebook/` — snippets to paste or include (`notebook/databases/` for bloom filter, skiplist, and eviction)
 - `contests/` — solutions by platform: leetcode, codeforces, atcoder, usaco, oi, icpc
 - `tools/` — `cpnew`, `cpgen`, `cptest`
+- `python/` — Python CP patterns: OOP, bisect, unpacking, and the rest of the language topics
 
 ## Tools
 
