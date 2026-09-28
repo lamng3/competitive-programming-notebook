@@ -9,9 +9,10 @@ import urllib.parse
 import re
 import textwrap
 
-TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "template1.cpp")
-SOLVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "solve")
-UPSOLVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "upsolve")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TEMPLATE_PATH = os.path.join(REPO_ROOT, "templates", "leetcode.cpp")
+SOLVE_DIR = os.path.join(REPO_ROOT, "contests", "leetcode", "solve")
+UPSOLVE_DIR = os.path.join(REPO_ROOT, "contests", "leetcode", "upsolve")
 
 LEETCODE_GRAPHQL = "https://leetcode.com/graphql"
 

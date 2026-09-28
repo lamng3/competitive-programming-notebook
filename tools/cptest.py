@@ -11,8 +11,9 @@ import tempfile
 import urllib.request
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-SOLVE_DIR = os.path.join(SCRIPT_DIR, "solve")
-TESTS_DIR = os.path.join(SCRIPT_DIR, "tests")
+REPO_ROOT = os.path.dirname(SCRIPT_DIR)
+SOLVE_DIR = os.path.join(REPO_ROOT, "contests", "leetcode", "solve")
+TESTS_DIR = os.path.join(REPO_ROOT, "contests", "leetcode", "tests")
 LEETCODE_GRAPHQL = "https://leetcode.com/graphql"
 
 # ── LeetCode API helpers ──────────────────────────────────────────────
@@ -687,7 +688,7 @@ def normalize_any_order(s: str) -> str:
 
 
 def find_solution(problem_number: str) -> str:
-    """Find the solution file: check cwd first, then default solve/ dir."""
+    """Find the solution file: check cwd first, then contests/leetcode/solve/."""
     cwd_path = os.path.join(os.getcwd(), f"{problem_number}.cpp")
     if os.path.exists(cwd_path):
         return cwd_path
@@ -900,8 +901,8 @@ def main():
         print('       cptest 930 --add "[1,2]" "3" --expect "5"')
         print("       cptest 930 --refetch")
         print()
-        print("  Looks for <number>.cpp in cwd first, then in solve/.")
-        print("  For contest problems, cd into solve/weekly/<n>/ or solve/biweekly/<n>/ first.")
+        print("  Looks for <number>.cpp in cwd first, then in contests/leetcode/solve/.")
+        print("  For contest problems, cd into contests/leetcode/solve/weekly/<n>/ or contests/leetcode/solve/biweekly/<n>/ first.")
         sys.exit(1)
 
     problem_number = sys.argv[1]
