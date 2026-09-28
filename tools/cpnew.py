@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Create a .cpp file from a template in the leetcode-setup repo.
+"""Create a .cpp file from a template.
 
 Usage:
-    cpnew A                     -> ./A.cpp from template0.cpp
-    cpnew A template1           -> ./A.cpp from template1.cpp
+    cpnew A                     -> ./A.cpp from contest.cpp
+    cpnew A leetcode            -> ./A.cpp from leetcode.cpp
     cpnew codeforces/r900/A     -> codeforces/r900/A.cpp (dirs created)
     cpnew A -f                  -> overwrite if A.cpp exists
 """
@@ -12,8 +12,9 @@ import os
 import shutil
 import sys
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_TEMPLATE = "template0"
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TEMPLATES_DIR = os.path.join(REPO_ROOT, "templates")
+DEFAULT_TEMPLATE = "contest"
 
 
 def resolve_template(name: str) -> str:
@@ -22,7 +23,7 @@ def resolve_template(name: str) -> str:
     if os.sep in name or name.startswith("."):
         candidates.append(os.path.abspath(name))
     else:
-        candidates.append(os.path.join(ROOT, name))
+        candidates.append(os.path.join(TEMPLATES_DIR, name))
         candidates.append(os.path.join(os.getcwd(), name))
     for base in list(candidates):
         if not base.endswith(".cpp"):
@@ -32,12 +33,12 @@ def resolve_template(name: str) -> str:
             return path
 
     available = sorted(
-        f[:-4] for f in os.listdir(ROOT)
-        if f.startswith("template") and f.endswith(".cpp")
+        f[:-4] for f in os.listdir(TEMPLATES_DIR)
+        if f.endswith(".cpp")
     )
     sys.exit(
         "Template not found: {}\nAvailable in {}: {}".format(
-            name, ROOT, ", ".join(available) or "(none)"
+            name, TEMPLATES_DIR, ", ".join(available) or "(none)"
         )
     )
 
