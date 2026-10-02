@@ -10,7 +10,7 @@ Competitive programming setup in C++ and Python.
 - `notebook/` — snippets to paste or include (`notebook/databases/` for bloom filter, skiplist, and eviction)
 - `contests/` — solutions by platform: leetcode, codeforces, atcoder, usaco, oi, icpc
 - `tools/` — `cpnew`, `cpgen`, `cptest`
-- `python/` — Python CP patterns: OOP, bisect, unpacking, and the rest of the language topics
+- `python/` — paste-ready Python snippets, same categories as `notebook/`
 
 ## Tools
 
