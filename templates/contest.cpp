@@ -1,6 +1,39 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+#ifdef LOCAL
+template<class T, class U>
+ostream& operator<<(ostream& os, const pair<T, U>& p) {
+    return os << "(" << p.first << ", " << p.second << ")";
+}
+template<class T, class = void>
+struct is_iterable : false_type {};
+template<class T>
+struct is_iterable<T, void_t<decltype(begin(declval<T&>())), decltype(end(declval<T&>()))>> : true_type {};
+template<class T, enable_if_t<is_iterable<T>::value && !is_convertible_v<T, string_view>, int> = 0>
+ostream& operator<<(ostream& os, const T& a) {
+    os << "[";
+    bool first = true;
+    for (const auto& x : a) {
+        if (!first) os << ", ";
+        first = false;
+        os << x;
+    }
+    return os << "]";
+}
+template<class T, class... A>
+void _dbg(const T& t, const A&... a) {
+    cerr << " " << t;
+    if constexpr (sizeof...(a)) {
+        cerr << ",";
+        _dbg(a...);
+    } else cerr << endl;
+}
+#define dbg(...) (cerr << "[" << #__VA_ARGS__ << "]:", _dbg(__VA_ARGS__))
+#else
+#define dbg(...)
+#endif
+
 using ll = long long;
 using i64 = int64_t;
 using u64 = uint64_t;
@@ -42,6 +75,7 @@ int main() {
     // freopen("name.out", "w", stdout);
     ios::sync_with_stdio(0);
     cin.tie(0);
+    cerr.tie(0);
     preprocess();
     int tt = 1;
     cin >> tt;
