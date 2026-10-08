@@ -15,11 +15,28 @@ Competitive programming setup in C++ and Python.
 ## Tools
 
 ### `cpbuild <file.cpp>`
-Debug compilation with sanitizers and warnings.
+Debug compilation with sanitizers and warnings. Passes `-DLOCAL`, which turns on `dbg` in the contest template.
 ```
-cpbuild contests/leetcode/solve/930.cpp
-./solution
+cpbuild A
+./solution < in.txt
 ```
+
+### Debug
+The contest template (`templates/contest.cpp`, what `cpnew` copies by default) prints debug to the terminal when you build with `cpbuild`.
+
+`cerr.tie(0)` sits next to `cin.tie(0)`. After `cin.tie(0)`, the Mac C++ library drops `cerr` unless it is untied from `cout`, so a plain `cerr` line shows up while the program is still running.
+
+```cpp
+void solve() {
+    int n; cin >> n;
+    vector<int> a(n);
+    for (int& x : a) cin >> x;
+    dbg(n, a);          // [n, a]: 3, [1, 2, 3]
+    cerr << a << '\n';  // [1, 2, 3]
+}
+```
+
+`dbg` prints numbers, strings, pairs, and containers: `vector`, `set`, `map`, and nested containers. On the judge `LOCAL` is off, so each `dbg(...)` compiles away and can stay in the submitted file.
 
 ### `cpnew <file> [template]`
 Copy a template into a new `.cpp` file in the current directory (or at the path you pass). Works from any directory: the script always loads templates from this repo, not from the folder you are in.
