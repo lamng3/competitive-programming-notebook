@@ -22,12 +22,14 @@ cpbuild contests/leetcode/solve/930.cpp
 ```
 
 ### `cpnew <file> [template]`
-Copy a template into a new `.cpp` file. Default template is `contest`. Others: `leetcode`, `minimal`, `oi`.
+Copy a template into a new `.cpp` file in the current directory (or at the path you pass). Works from any directory: the script always loads templates from this repo, not from the folder you are in.
+
+With no template argument, `cpnew` uses `templates/contest.cpp`. Other templates: `leetcode`, `minimal`, `oi`.
 ```
-cpnew A
-cpnew A leetcode
-cpnew contests/codeforces/r900/A
-cpnew A -f
+cpnew A                              # ./A.cpp from templates/contest.cpp
+cpnew A leetcode                     # ./A.cpp from templates/leetcode.cpp
+cpnew contests/codeforces/r900/A    # creates missing directories
+cpnew A -f                           # overwrite if A.cpp exists
 ```
 
 ### `cpgen <problem_number> [contest_number] [--weekly|--biweekly] [--upsolve]`
@@ -64,13 +66,28 @@ Supports TreeNode and ListNode problems — struct definitions are auto-generate
 
 ## Setup
 
-Clone the repo, then add to `~/.zshrc` (replace `<path>` with where you cloned it):
+These commands are shell functions, so they are available in every directory once your shell loads them. They call the scripts in this repo via `CP_ROOT`; they do not depend on the current working directory. `cpnew` still writes the new file in the directory you run it from (or at the path you give), and with no template name it copies `templates/contest.cpp`.
+
+Clone this repo, then add the block below to `~/.zshrc`. `CP_ROOT` must be the clone location. On this machine that is `$HOME/Desktop/source/competitive-programming`. Then run `source ~/.zshrc` (or open a new terminal).
+
 ```zsh
-export CP_ROOT="<path>/competitive-programming-setup"
+# Competitive programming tools. Work from any directory.
+export CP_ROOT="$HOME/Desktop/source/competitive-programming"
 
 cpbuild() {
-    g++ -std=c++17 -DLOCAL -Wall -Wextra -Wshadow -fsanitize=address -fsanitize=undefined "$1" -o solution
-    echo "Compiled $1 -> solution"
+    local src="$1"
+    if [[ -z $src ]]; then
+        echo "usage: cpbuild <file>[.cpp] [extra g++ flags...]" >&2
+        return 2
+    fi
+    [[ -f $src ]] || [[ ! -f $src.cpp ]] || src="$src.cpp"
+    if [[ ! -f $src ]]; then
+        echo "No such file: $1 (tried $1 and $1.cpp)" >&2
+        return 1
+    fi
+    shift
+    g++ -std=c++20 -DLOCAL -Wall -Wextra -Wshadow -fsanitize=address -fsanitize=undefined "$src" "$@" -o solution \
+        && echo "Compiled $src -> solution"
 }
 cpnew() {
     python3 "$CP_ROOT/tools/cpnew.py" "$@"
@@ -80,6 +97,17 @@ cpgen() {
 }
 cptest() {
     python3 "$CP_ROOT/tools/cptest.py" "$@"
+}
+cprun() {
+    if [[ -x ./solution ]]; then
+        ./solution "$@"
+    elif [[ -e ./solution ]]; then
+        echo "./solution exists but is not executable (chmod +x ./solution)" >&2
+        return 126
+    else
+        echo "No ./solution in $PWD - build one first with: cpbuild <file>.cpp" >&2
+        return 127
+    fi
 }
 ```
 
