@@ -1,6 +1,6 @@
-# competitive-programming-setup
+# Competitive programming notebook
 
-Competitive programming setup in C++ and Python.
+Templates, snippets, and contest solutions in C++ and Python. Notes: [cp-docs](https://lamng3.github.io/cp-docs/).
 
 ![demo](assets/demo.gif)
 
@@ -127,6 +127,3 @@ cprun() {
     fi
 }
 ```
-
-## Inspirations
-- [Benjamin Qi cp-notebook](https://github.com/bqi343/cp-notebook)
