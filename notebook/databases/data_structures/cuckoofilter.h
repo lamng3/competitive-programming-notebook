@@ -74,20 +74,6 @@ public:
         return false;
     }
 
-    double fill_rate() {
-        int used = 0;
-        for (auto& bucket : B) {
-            for (int v : bucket) used += v != EMPTY;
-        }
-        return (double)used / (N * BUCKET_SIZE);
-    }
-
-    double false_positive_rate() {
-        // a lookup compares f with up to 2 buckets, each entry matches with prob 1/255
-        double entries = 2 * BUCKET_SIZE * fill_rate();
-        return 1 - pow(1 - 1.0 / 255, entries);
-    }
-
     bool lookup(const string& x) {
         int f = fingerprint(x);
         size_t i1 = hash(x) % N;
@@ -112,5 +98,21 @@ public:
             return true;
         }
         return false;
+    }
+
+    // statistics
+
+    double fill_rate() {
+        int used = 0;
+        for (auto& bucket : B) {
+            for (int v : bucket) used += v != EMPTY;
+        }
+        return (double)used / (N * BUCKET_SIZE);
+    }
+
+    double false_positive_rate() {
+        // a lookup compares f with up to 2 buckets, each entry matches with prob 1/255
+        double entries = 2 * BUCKET_SIZE * fill_rate();
+        return 1 - pow(1 - 1.0 / 255, entries);
     }
 };
