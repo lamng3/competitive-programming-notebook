@@ -1,3 +1,5 @@
+import random
+
 MASK = (1 << 64) - 1  # Python ints never overflow, so cut every step to 64 bits
 
 
@@ -32,6 +34,17 @@ def splitmix64(x):
     x = ((x ^ (x >> 30)) * 0xbf58476d1ce4e5b9) & MASK
     x = ((x ^ (x >> 27)) * 0x94d049bb133111eb) & MASK
     return x ^ (x >> 31)
+
+
+# hash of a str or int under a seed, every seed gives an independent hash
+# use hash_with_seed(key, seed) % width as the column of a row
+def hash_with_seed(key, seed):
+    return splitmix64(djb2(str(key)) ^ ((seed + 0x9e3779b97f4a7c15) & MASK))
+
+
+# one random 64-bit seed per row
+def random_seeds(k):
+    return [random.getrandbits(64) for _ in range(k)]
 
 
 # k hashes via Kirsch-Mitzenmacher: h1 + i*h2
