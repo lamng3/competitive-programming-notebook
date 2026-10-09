@@ -2,6 +2,9 @@
 
 Paste-ready snippets, one class per file. Categories match `notebook/`. Drop the next translation in the same place as its C++ header.
 
+- [databases/data_structures/BloomFilter.py](databases/data_structures/BloomFilter.py)
+- [databases/data_structures/CountMinSketch.py](databases/data_structures/CountMinSketch.py)
+- [databases/data_structures/CuckooFilter.py](databases/data_structures/CuckooFilter.py)
 - [databases/data_structures/Skiplist.py](databases/data_structures/Skiplist.py)
 - [databases/data_structures/utils/hash.py](databases/data_structures/utils/hash.py)
 - [graphs/dsu/DSU.py](graphs/dsu/DSU.py)
