@@ -4,7 +4,10 @@ Write the class there, then run from this folder:
     python3 -m unittest -v test_bloomfilter
 
 Expected interface (same as notebook/databases/data_structures/bloomfilter.h):
-    BloomFilter(m)        m = number of bits
+    BloomFilter(m, hash_functions=None)
+        m = number of bits
+        hash_functions = list of functions key -> int (any size, the filter takes % m);
+        None means use djb2 and fnv1a from utils/hash.py
     add(key)              key is a str
     contains(key) -> bool
     clear()
@@ -95,6 +98,49 @@ class TestBloomFilter(unittest.TestCase):
         rate = fp / trials
         print("false positive rate: %.4f (%d/%d)" % (rate, fp, trials))
         self.assertLess(rate, 0.05)
+
+    def test_custom_hash_functions_are_used(self):
+        calls = []
+
+        def spy(key):
+            calls.append(key)
+            return 5
+
+        bf = BloomFilter(100, [spy])
+        bf.add("apple")
+        self.assertEqual(calls, ["apple"])
+        self.assertTrue(bf.contains("apple"))
+        self.assertEqual(calls, ["apple", "apple"])
+
+    def test_every_hash_function_is_used(self):
+        # two hashes that fix bit 1 and bit 2: a key must have BOTH bits set
+        bf = BloomFilter(100, [lambda k: 1, lambda k: 2 if k == "a" else 3])
+        bf.add("a")                      # sets bits 1 and 2
+        self.assertTrue(bf.contains("a"))
+        self.assertFalse(bf.contains("b"))   # needs bits 1 and 3, bit 3 is off
+
+    def test_hash_results_are_reduced_modulo_m(self):
+        bf = BloomFilter(10, [lambda k: 10 ** 30 + 7, lambda k: -3])
+        bf.add("apple")
+        self.assertTrue(bf.contains("apple"))
+
+    def test_a_constant_hash_makes_every_key_collide(self):
+        bf = BloomFilter(100, [lambda k: 0])
+        bf.add("apple")
+        self.assertTrue(bf.contains("anything else"))
+
+    def test_more_hash_functions_lower_the_false_positive_rate(self):
+        # with 500 keys in 10000 bits: k=1 is clearly worse than k=3
+        def rate(hash_functions):
+            bf = BloomFilter(10000, hash_functions)
+            for i in range(500):
+                bf.add("key" + str(i))
+            return sum(bf.contains("absent" + str(i)) for i in range(5000)) / 5000
+
+        def poly(base):
+            return lambda k: sum(ord(c) * base ** i for i, c in enumerate(k))
+
+        self.assertLess(rate([poly(31), poly(37), poly(41)]), rate([poly(31)]))
 
     def test_hash_cares_about_character_order(self):
         # a hash that only sums the characters cannot tell anagrams apart
