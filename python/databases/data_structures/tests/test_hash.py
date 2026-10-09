@@ -8,7 +8,7 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.hash import MASK, polynomial, djb2, fnv1a, splitmix64, generate_hashes
+from utils.hash import MASK, polynomial, djb2, fnv1a, splitmix64, generate_hashes, hash_with_seed, random_seeds
 
 HASHES = [polynomial, djb2, fnv1a]
 
@@ -53,6 +53,41 @@ class TestHash(unittest.TestCase):
             for i in range(1000):
                 counts[h("key" + str(i)) % 100] += 1
             self.assertLess(max(counts), 40, h.__name__)
+
+    def test_hash_with_seed_is_repeatable(self):
+        self.assertEqual(hash_with_seed("apple", 7), hash_with_seed("apple", 7))
+        self.assertEqual(hash_with_seed(42, 7), hash_with_seed(42, 7))
+        self.assertLessEqual(hash_with_seed("apple", 7), MASK)
+
+    def test_hash_with_seed_changes_with_the_seed(self):
+        values = {hash_with_seed("apple", s) for s in range(100)}
+        self.assertEqual(len(values), 100)
+
+    def test_hash_with_seed_takes_str_and_int_keys(self):
+        self.assertNotEqual(hash_with_seed(1, 5), hash_with_seed(2, 5))
+        self.assertNotEqual(hash_with_seed("a", 5), hash_with_seed("b", 5))
+
+    def test_two_seeds_pick_different_columns(self):
+        # rows must be independent: two seeds rarely send the same key to the same column
+        width = 100
+        same = sum(hash_with_seed("key" + str(i), 1) % width == hash_with_seed("key" + str(i), 2) % width
+                   for i in range(1000))
+        self.assertLess(same, 50)       # about 10 expected, 1000 would mean the seed does nothing
+
+    def test_seeded_hash_spreads_over_columns(self):
+        counts = [0] * 100
+        for i in range(1000):
+            counts[hash_with_seed(i, 3) % 100] += 1
+        self.assertLess(max(counts), 40)
+
+    def test_random_seeds(self):
+        seeds = random_seeds(5)
+        self.assertEqual(len(seeds), 5)
+        self.assertEqual(len(set(seeds)), 5)
+        for s in seeds:
+            self.assertTrue(0 <= s <= MASK)
+        self.assertNotEqual(seeds, random_seeds(5))
+        self.assertEqual(random_seeds(0), [])
 
     def test_generate_hashes(self):
         hs = generate_hashes(4)
