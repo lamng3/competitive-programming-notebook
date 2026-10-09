@@ -52,7 +52,9 @@ public:
         }
         // must relocate existing items
         size_t i = rand() % 2 ? i1 : i2;
+        // remember each swap (bucket, entry) to undo on failure
         vector<pair<size_t, int>> kicks;
+        // cap the kicks so a cycle can't loop forever
         for (int n = 0; n < MAX_NUM_KICKS; n++) {
             // randomly select an entry e from bucket[i]
             int e = rand() % BUCKET_SIZE;
