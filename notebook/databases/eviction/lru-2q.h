@@ -54,6 +54,10 @@ public:
     }
 
     Page put(int key, int value) override {
+        // already resident: update in place, never in a second queue
+        if (Am.get(key).valid) return Am.put(key, value);
+        if (A1_in.get(key).valid) return A1_in.put(key, value);
+
         if (A1_out.contains(key)) {
             A1_out.erase(key);
             return Am.put(key, value);
