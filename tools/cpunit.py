@@ -7,7 +7,7 @@ Usage:
     cpunit cuckoofilter --cpp   only the C++ one
     cpunit --list               show every test that can be run
 
-Finds notebook/**/tests/<name>_test.cpp and python/**/tests/test_<name>.py.
+Finds <name>_test.cpp and test_<name>.py in any tests/ folder under notebook/, python/, or interviews/.
 """
 
 import os
@@ -16,7 +16,7 @@ import sys
 import tempfile
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SEARCH_DIRS = ["notebook", "python"]
+SEARCH_DIRS = ["notebook", "python", "interviews"]
 
 
 def find_tests():
