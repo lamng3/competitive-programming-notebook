@@ -29,13 +29,13 @@ struct SRD {
     T query(int R) {
         if (R < 0) return 0;
         T res = 0;
-        for (int i = 0; i < R/BLOCK_SIZE; i++) r += blocks[i];
-        for (int i = (R/BLOCK_SIZE) * BLOCK_SIZE; i < R; i++) r += A[i];
+        for (int i = 0; i < R/BLOCK_SIZE; i++) res += blocks[i];
+        for (int i = (R/BLOCK_SIZE) * BLOCK_SIZE; i < R; i++) res += A[i];
         return res;
     }
 
     /* O(sqrt(n)) query for sum of [L,R) */
     T query(int L, int R) {
-        return query(R) - query(L-1);
+        return query(R) - query(L);
     }
 };

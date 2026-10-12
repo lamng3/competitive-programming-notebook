@@ -19,7 +19,7 @@ struct IterativeSegmentTree {
     // point update in O(log n): set A[p] = value
     void update(int p, int v) {
         // set value at the leaf, then walk up the tree
-        for (tree[p += n] = value; p > 1; p >>= 1) {
+        for (tree[p += n] = v; p > 1; p >>= 1) {
             // tree[p ^ 1] safely gets the sibling of p
             tree[p >> 1] = tree[p] + tree[p ^ 1];
         }
