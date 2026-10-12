@@ -47,6 +47,8 @@ cpnew A                              # ./A.cpp from templates/contest.cpp
 cpnew A leetcode                     # ./A.cpp from templates/leetcode.cpp
 cpnew contests/codeforces/r900/A    # creates missing directories
 cpnew A -f                           # overwrite if A.cpp exists
+cpnew A --py                         # ./A.py from python/template.py
+cpnew A leetcode --py                # ./A.py from python/leetcode.py
 ```
 
 ### `cpgen <problem_number> [contest_number] [--weekly|--biweekly] [--upsolve]`
