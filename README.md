@@ -10,7 +10,7 @@ Templates, snippets, and contest solutions in C++ and Python. Notes: [cp-docs](h
 - `notebook/` — snippets to paste or include (`notebook/databases/` for bloom filter, count-min sketch, cuckoo filter, skiplist, and eviction)
 - `contests/` — solutions by platform: leetcode, codeforces, atcoder, usaco, oi, icpc
 - `interviews/` — interview problems, one folder per question, each with C++, Python, and tests
-- `todo/` — topics to study later, from fextivity's [CP-aeren library](https://github.com/fextivity/CP-aeren/tree/main/Library), ticked as the notebook gains its own implementation
+- `todo/` — a C++ study list in numbered sections, one stub per topic, from fextivity's [CP-aeren library](https://github.com/fextivity/CP-aeren/tree/main/Library); ticked as the notebook gains its own implementation
 - `tools/` — `cpnew`, `cpgen`, `cptest`
 - `python/` — paste-ready Python snippets, same categories as `notebook/`
 
