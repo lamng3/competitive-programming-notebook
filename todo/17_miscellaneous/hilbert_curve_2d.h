@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Hilbert curve 2D
 // Section: 17. Miscellaneous
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Miscellaneous/hilbert_curve_2d.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/hilbert_curve_2d_test.cpp,

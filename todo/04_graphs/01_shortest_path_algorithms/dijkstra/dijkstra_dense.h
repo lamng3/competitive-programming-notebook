@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Dijkstra dense
 // Section: 4. Graph Theory / Shortest Path Algorithms / Dijkstra
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Graph_Theory/Shortest_Path_Algorithms/Dijkstra/dijkstra_dense.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/dijkstra_dense_test.cpp,

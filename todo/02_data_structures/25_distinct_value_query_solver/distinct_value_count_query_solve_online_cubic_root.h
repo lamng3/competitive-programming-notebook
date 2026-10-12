@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Distinct value count query solve online cubic root
 // Section: 2. Data Structure / Distinct Value Query solver
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Data_Structure/Distinct_Value_Query_solver/distinct_value_count_query_solve_online_cubic_root.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/distinct_value_count_query_solve_online_cubic_root_test.cpp,

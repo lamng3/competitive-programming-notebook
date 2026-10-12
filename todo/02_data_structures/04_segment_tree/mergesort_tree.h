@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Mergesort tree
 // Section: 2. Data Structure / Segment Tree
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Data_Structure/Segment_Tree/mergesort_tree.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/mergesort_tree_test.cpp,

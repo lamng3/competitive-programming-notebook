@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Topological sorter
 // Section: 4. Graph Theory / DFS Based
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Graph_Theory/DFS_Based/topological_sorter.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // We have it in Python: python/graphs/topological_sort/TopoSort.py. Port it to C++ here.

@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Half planes intersection
 // Section: 13. Geometry / Convex Polygon
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Geometry/Convex_Polygon/half_planes_intersection.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/half_planes_intersection_test.cpp,

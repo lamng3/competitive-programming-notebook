@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Bell number
 // Section: 11. Power Series / Bell Number
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Power_Series/Bell_Number/bell_number.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/bell_number_test.cpp,

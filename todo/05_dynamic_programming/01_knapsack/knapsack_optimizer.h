@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Knapsack optimizer
 // Section: 5. Dynamic Programming / Knapsack
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Dynamic_Programming/Knapsack/knapsack_optimizer.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/knapsack_optimizer_test.cpp,
