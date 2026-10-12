@@ -24,9 +24,10 @@ struct SparseST {
     }
 
     void push(Node* node, int tl, int tr) {
-        if (node->lazy == -1) return;
+        // children first: update and query step into them even with nothing to push
         if (!node->left) node->left = new Node();
         if (!node->right) node->right = new Node();
+        if (node->lazy == -1) return;
         int tm = tl + (tr - tl) / 2;
         apply(node->left, tl, tm, node->lazy);
         apply(node->right, tm + 1, tr, node->lazy);
