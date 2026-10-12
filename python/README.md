@@ -9,5 +9,7 @@ Paste-ready snippets, one class per file. Categories match `notebook/`. Drop the
 - [databases/data_structures/utils/hash.py](databases/data_structures/utils/hash.py)
 - [graphs/dsu/DSU.py](graphs/dsu/DSU.py)
 - [strings/rolling_hash/RollingHash.py](strings/rolling_hash/RollingHash.py)
+- [strings/trie/FileSystem.py](strings/trie/FileSystem.py)
+- [strings/trie/Trie.py](strings/trie/Trie.py)
 
 `template.py` is the contest starter.
