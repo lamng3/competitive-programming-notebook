@@ -2,9 +2,21 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-// TODO: Binary power general
+// TODO (study): Binary power general
 // Section: 1. Numeric
-// Status: not started
+// Status: written and tested, not studied yet
 //
-// When done: implement it below in the notebook's style, add tests/binary_power_general_test.cpp,
-// move it into notebook/, and tick it in todo/README.md.
+// a^e for any associative operation, by squaring: O(log e) operations.
+// The operation does not have to be multiplication: composing permutations,
+// multiplying matrices, or (min, +) "multiplying" distance matrices all work.
+
+template <class T, class Op>
+T power_general(T a, long long e, T identity, Op op) {
+    T res = identity;
+    while (e > 0) {
+        if (e & 1) res = op(res, a);
+        a = op(a, a);
+        e >>= 1;
+    }
+    return res;
+}
