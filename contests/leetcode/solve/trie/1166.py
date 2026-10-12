@@ -4,7 +4,7 @@ from collections import defaultdict
 class Node:
     def __init__(self):
         self.children = defaultdict(Node) # name -> node
-        self.value = -1                   # -1 until a path is created here
+        self.content = -1                 # -1 until a path is created here
 
 
 class FileSystem:
@@ -24,14 +24,14 @@ class FileSystem:
         names = [name for name in path.split("/") if name]
         if not names: return False
         par = self._walk(names[:-1])
-        # parent missing, or the path already exists
+        # parent does not exist or path already exists
         if par is None or names[-1] in par.children: return False
-        par.children[names[-1]].value = value # [] creates the new node
+        par.children[names[-1]].content = value # [] creates the new node
         return True
 
     def get(self, path: str) -> int:
         node = self._walk([name for name in path.split("/") if name])
-        return node.value if node is not None else -1
+        return node.content if node is not None else -1
 
 # Your FileSystem object will be instantiated and called as such:
 # obj = FileSystem()
