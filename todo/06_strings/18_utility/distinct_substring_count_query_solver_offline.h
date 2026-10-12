@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Distinct substring count query solver offline
 // Section: 6. String / Utility
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/String/Utility/distinct_substring_count_query_solver_offline.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/distinct_substring_count_query_solver_offline_test.cpp,

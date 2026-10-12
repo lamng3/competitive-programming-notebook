@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Suffix array slow
 // Section: 6. String / Suffix Array
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/String/Suffix_Array/suffix_array_slow.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/suffix_array_slow_test.cpp,

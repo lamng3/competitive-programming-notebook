@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Monoid
 // Section: 12. Abstract Algebra
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Abstract_Algebra/monoid.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/monoid_test.cpp,

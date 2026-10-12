@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Power series compositional inverse
 // Section: 11. Power Series
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Power_Series/power_series_compositional_inverse.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/power_series_compositional_inverse_test.cpp,

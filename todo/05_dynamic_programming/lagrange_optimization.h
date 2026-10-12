@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Lagrange optimization
 // Section: 5. Dynamic Programming
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Dynamic_Programming/lagrange_optimization.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/lagrange_optimization_test.cpp,

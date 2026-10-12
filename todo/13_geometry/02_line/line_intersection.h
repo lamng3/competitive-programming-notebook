@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Line intersection
 // Section: 13. Geometry / Line
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Geometry/Line/line_intersection.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/line_intersection_test.cpp,

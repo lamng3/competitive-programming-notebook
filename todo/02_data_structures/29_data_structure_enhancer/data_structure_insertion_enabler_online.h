@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Data structure insertion enabler online
 // Section: 2. Data Structure / Data Structure Enhancer
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Data_Structure/Data_Structure_Enhancer/data_structure_insertion_enabler_online.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/data_structure_insertion_enabler_online_test.cpp,

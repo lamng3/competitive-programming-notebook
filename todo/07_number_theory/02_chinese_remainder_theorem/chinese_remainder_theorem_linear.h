@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Chinese remainder theorem linear
 // Section: 7. Number Theory / Chinese Remainder Theorem
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Number_Theory/Chinese_Remainder_Theorem/chinese_remainder_theorem_linear.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/chinese_remainder_theorem_linear_test.cpp,

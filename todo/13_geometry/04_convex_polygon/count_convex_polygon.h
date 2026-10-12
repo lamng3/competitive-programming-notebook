@@ -4,8 +4,6 @@ using namespace std;
 
 // TODO: Count convex polygon
 // Section: 13. Geometry / Convex Polygon
-// Reference: https://github.com/fextivity/CP-aeren/blob/main/Library/Geometry/Convex_Polygon/count_convex_polygon.sublime-snippet
-//   (topic from fextivity's CP-aeren library; write our own version, do not copy)
 // Status: not started
 //
 // When done: implement it below in the notebook's style, add tests/count_convex_polygon_test.cpp,
