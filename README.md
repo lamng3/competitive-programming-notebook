@@ -9,6 +9,7 @@ Templates, snippets, and contest solutions in C++ and Python. Notes: [cp-docs](h
 - `templates/` — contest, leetcode, minimal, and oi starters
 - `notebook/` — snippets to paste or include (`notebook/databases/` for bloom filter, count-min sketch, cuckoo filter, skiplist, and eviction)
 - `contests/` — solutions by platform: leetcode, codeforces, atcoder, usaco, oi, icpc
+- `interviews/` — interview problems in C++ and Python: LeetCode design, object design, and practical rounds
 - `tools/` — `cpnew`, `cpgen`, `cptest`
 - `python/` — paste-ready Python snippets, same categories as `notebook/`
 
