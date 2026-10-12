@@ -29,6 +29,13 @@ struct Mo {
     // expand then shrink
     // add(++mo_R)/add(--mo_L) and remove(mo_R--)/remove(mo_L--)
     inline void process_queries() {
+        // by block of L, then R (zig-zag on odd blocks): the window moves O((n + q) sqrt n)
+        sort(Q.begin(), Q.end(), [&](const Query& a, const Query& b) {
+            int ba = a.L / BLOCK_SIZE, bb = b.L / BLOCK_SIZE;
+            if (ba != bb) return ba < bb;
+            return (ba & 1) ? a.R > b.R : a.R < b.R;
+        });
+
         // window size = mo_R - mo_L + 1 = 0 (empty)
         int mo_L = 0, mo_R = -1;
         for (int i = 0; i < Q.size(); i++) {
