@@ -3,8 +3,8 @@ from collections import defaultdict
 
 class Node:
     def __init__(self):
-        self.children = defaultdict(Node) # name -> node, created on first touch
-        self.content = None               # None for a directory, a string for a file
+        self.children = defaultdict(Node) # name -> node
+        self.content = None               # None: a directory, str: a file
 
 
 class FileSystem:
