@@ -21,8 +21,8 @@ Options:
                   report crashes, TLE, and the slowest seed
 
 A program is a .cpp (compiled with -O2 -DONLINE_JUDGE, cached by mtime) or a .py file.
-The brute force defaults to A_brute, A_trau, brute, trau, or naive; the generator to A_gen,
-A_sinh, gen, or sinh (.cpp or .py, looked up next to A). The generator is run as `gen <seed>`
+The brute force defaults to A_brute, brute, or naive; the generator to A_gen or gen
+(.cpp or .py, looked up next to A). The generator is run as `gen <seed>`
 and prints one test.
 
 File I/O works too: a program that does freopen("comnet.inp", "r", stdin) and
@@ -55,8 +55,8 @@ RED, GREEN, YELLOW, DIM, BOLD, RESET = (
 TTY = sys.stdout.isatty()
 CLEAR = "\r\033[K" if TTY else ""
 SHOW_LINES = 25
-BRUTE_NAMES = ["{stem}_brute", "{stem}_trau", "{stem}brute", "brute", "trau", "naive"]
-GEN_NAMES = ["{stem}_gen", "{stem}_sinh", "{stem}gen", "gen", "sinh"]
+BRUTE_NAMES = ["{stem}_brute", "{stem}brute", "brute", "naive"]
+GEN_NAMES = ["{stem}_gen", "{stem}gen", "gen"]
 
 
 def die(msg, code=2):
@@ -505,7 +505,7 @@ def main():
                if not p and not (r == "brute force" and opts["no_brute"])]
     if missing:
         die(f"Missing {' and '.join(missing)} next to {os.path.basename(sol_path)}.\n"
-            f"Looked for {stem}_brute / {stem}_trau / brute / naive and {stem}_gen / gen "
+            f"Looked for {stem}_brute / brute / naive and {stem}_gen / gen "
             f"(.cpp or .py).\nCreate both with: cpdiff {target} --init")
     if brute_path and os.path.samefile(brute_path, sol_path):
         die("The brute force and the solution are the same file.")
