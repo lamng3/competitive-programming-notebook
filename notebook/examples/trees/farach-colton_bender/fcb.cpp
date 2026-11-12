@@ -209,13 +209,19 @@ int lca_in_block(int b, int l, int r) {
 }
 
 /*
-    range [l, r] = [first_visit[v], first_visit[u]]
-        same block       ->  lca_in_block
-        different blocks ->  min of
-                               suffix of l's block    (lca_in_block)
-                               blocks in between      (sparse table)
-                               prefix of r's block    (lca_in_block)
-    each part is O(1)
+    l = first_visit[v],  r = first_visit[u],  B = block_size
+    bl = l / B,  br = r / B
+
+    lca(v, u) = euler_tour[ argmin_h [l, r] ]
+
+    bl == br:  argmin_h [l, r]                      one block       (lca_in_block)
+    bl <  br:  argmin_h of
+                 [l, (bl+1)B - 1]                   suffix of bl    (lca_in_block)
+                 [(bl+1)B, br*B - 1]                blocks bl+1 .. br-1, empty if bl+1 == br
+                                                    = two overlapping runs of 2^k blocks (st)
+                 [br*B, r]                          prefix of br    (lca_in_block)
+
+    argmin_h = the index whose vertex has the smallest height; each part is O(1)
 */
 int lca(int v, int u) {
     int l = first_visit[v];
@@ -226,14 +232,14 @@ int lca(int v, int u) {
     int br = r / block_size;
     if (bl == br)
         return euler_tour[lca_in_block(bl, l % block_size, r % block_size)];
-    int ans1 = lca_in_block(bl, l % block_size, block_size - 1);
-    int ans2 = lca_in_block(br, 0, r % block_size);
-    int ans = min_by_h(ans1, ans2);
+    int suffix = lca_in_block(bl, l % block_size, block_size - 1);
+    int prefix = lca_in_block(br, 0, r % block_size);
+    int ans = min_by_h(suffix, prefix);
     if (bl + 1 < br) {
-        int l = log_2[br - bl - 1];
-        int ans3 = st[bl+1][l];
-        int ans4 = st[br - (1 << l)][l];
-        ans = min_by_h(ans, min_by_h(ans3, ans4));
+        int k = log_2[br - bl - 1];
+        int mid_left = st[bl + 1][k];           // blocks [bl+1, bl+1 + 2^k)
+        int mid_right = st[br - (1 << k)][k];   // blocks [br - 2^k, br)
+        ans = min_by_h(ans, min_by_h(mid_left, mid_right));
     }
     return euler_tour[ans];
 }
