@@ -10,7 +10,7 @@ using namespace std;
     FCB fcb(adj, root);    adj is 0-indexed and undirected
     fcb.lca(u, v);  fcb.dist(u, v);  fcb.depth(u);
 
-    dfs is recursive: a path of 5e5 vertices needs `ulimit -s 65520` locally
+    flatten is recursive: a path of 5e5 vertices needs `ulimit -s 65520` locally
 */
 class FCB {
 public:
@@ -63,7 +63,7 @@ private:
     vector<vector<vector<int>>> blocks;
     vector<int> block_mask;
 
-    void dfs(int v, int p, int h) {
+    void flatten(int v, int p, int h) {
         first_visit[v] = euler_tour.size();
         euler_tour.push_back(v);
         height[v] = h;
@@ -71,7 +71,7 @@ private:
         for (int u : adj[v]) {
             if (u == p)
                 continue;
-            dfs(u, v, h + 1);
+            flatten(u, v, h + 1);
             euler_tour.push_back(v);
         }
     }
@@ -145,7 +145,7 @@ private:
         height.assign(n, 0);
         euler_tour.clear();
         euler_tour.reserve(2 * n);
-        dfs(root, -1, 0);
+        flatten(root, -1, 0);
 
         int m = euler_tour.size();
         precompute_log(m);

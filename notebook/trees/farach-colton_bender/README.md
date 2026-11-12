@@ -30,7 +30,7 @@ lca(u, v) = shallowest vertex in euler_tour[first_visit[u] .. first_visit[v]]
 
 | Function | What it does |
 |:--|:--|
-| `dfs(v, p, h)` | writes `v`, recurses into each child, writes `v` again after each one |
+| `flatten(v, p, h)` | writes `v`, recurses into each child, writes `v` again after each one |
 | `min_by_h(i, j)` | of two `euler_tour` indices, the one whose vertex is shallower |
 | `precompute_log(m)` | `log_2[x] = log_2[x/2] + 1`, with `log_2[0] = -1`; `fcb.cpp` builds it once in `preprocess` up to `2 * MAX_N` |
 | `precompute_sparse_table(m)` | `st[b][0]` = min of block `b`; `st[b][k]` combines two runs of `2^(k-1)` blocks |
@@ -60,10 +60,10 @@ height      0 1 2 1 2 1 0 1 2 1 2  1  0
 ```
 
 ```
-dfs(v):
+flatten(v):
     write v
     for each child u:
-        dfs(u)
+        flatten(u)
         write v          <- back up through v
 ```
 

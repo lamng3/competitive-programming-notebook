@@ -82,15 +82,13 @@ vii st;
 vector<vii> blocks;
 vi block_mask;
 
-void dfs(int v, int p, int h) {
+void flatten(int v, int p, int h) {
     first_visit[v] = sz(euler_tour);
     euler_tour.pb(v);
     height[v] = h;
-
     for (int u : adj[v]) {
-        if (u == p)
-            continue;
-        dfs(u, v, h + 1);
+        if (u == p) continue;
+        flatten(u, v, h + 1);
         euler_tour.pb(v);
     }
 }
@@ -164,7 +162,7 @@ void precompute_lca(int root) {
     height.assign(n, 0);
     euler_tour.clear();
     euler_tour.reserve(2 * n);
-    dfs(root, -1, 0);
+    flatten(root, -1, 0);
 
     int m = sz(euler_tour);
     block_size = max(1, log_2[m] / 2);
