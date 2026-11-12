@@ -155,16 +155,10 @@ private:
         }
     }
 
-    /*
-        blocks[mask][l][r] = offset of the min of [l, r] in a block with that mask
-        built once per mask, from the first block that has it (by the claim above)
-
-        at most 2^(b-1) <= sqrt(m) masks, b^2 entries each: O(sqrt(m) log^2 m)
-        a short last block skips offsets past m; no query reaches them
-    */
+    // precompute RMQ for each unique block
     void precompute_blocks(int m) {
-        int possibilities = 1 << (block_size - 1);
-        blocks.assign(possibilities, {});
+        int FULL = 1 << (block_size - 1); // number of masks
+        blocks.assign(FULL, {});
         for (int b = 0; b < block_cnt; b++) {
             int mask = block_mask[b];
             if (!blocks[mask].empty())

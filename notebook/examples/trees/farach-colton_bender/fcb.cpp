@@ -70,16 +70,16 @@ mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
 */
 
 int n;
-vector<vector<int>> adj;
+vii adj;
 
 int block_size, block_cnt;
-vector<int> first_visit;              // first index of v in euler_tour
-vector<int> euler_tour;               // v written on entry and after each child returns
-vector<int> height;                   // depth of v, root = 0
-vector<int> log_2;                    // log_2[x] = floor(log2(x))
-vector<vector<int>> st;               // st[b][k] = min of blocks [b, b + 2^k)
-vector<vector<vector<int>>> blocks;   // blocks[mask][l][r] = min of [l, r] inside a block
-vector<int> block_mask;               // bit j-1 = 1 if height goes +1 from offset j-1 to j
+vi first_visit;                       // first index of v in euler_tour
+vi euler_tour;                        // v written on entry and after each child returns
+vi height;                            // depth of v, root = 0
+vi log_2;                             // log_2[x] = floor(log2(x))
+vii st;                               // st[b][k] = min of blocks [b, b + 2^k)
+vector<vii> blocks;                   // blocks[mask][l][r] = min of [l, r] inside a block
+vi block_mask;                        // bit j-1 = 1 if height goes +1 from offset j-1 to j
 
 /*
     euler tour: write v on entry, and again each time a child returns to v
@@ -95,15 +95,15 @@ vector<int> block_mask;               // bit j-1 = 1 if height goes +1 from offs
     each step goes to a child or back to the parent, so neighbouring heights differ by 1
 */
 void dfs(int v, int p, int h) {
-    first_visit[v] = euler_tour.size();
-    euler_tour.push_back(v);
+    first_visit[v] = sz(euler_tour);
+    euler_tour.pb(v);
     height[v] = h;
 
     for (int u : adj[v]) {
         if (u == p)
             continue;
         dfs(u, v, h + 1);
-        euler_tour.push_back(v); // back up through v
+        euler_tour.pb(v); // back up through v
     }
 }
 
@@ -114,7 +114,7 @@ int min_by_h(int i, int j) {
 
 void precompute_log(int m) {
     log_2.assign(m + 1, -1);
-    for (int i = 1; i <= m; i++)
+    FOR(i, 1, m)
         log_2[i] = log_2[i / 2] + 1;
 }
 
@@ -128,15 +128,15 @@ void precompute_log(int m) {
     which is fine for min: min(x, x) = x
 */
 void precompute_sparse_table(int m) {
-    st.assign(block_cnt, vector<int>(log_2[block_cnt] + 1));
+    st.assign(block_cnt, vi(log_2[block_cnt] + 1));
     for (int i = 0, j = 0, b = 0; i < m; i++, j++) {
         if (j == block_size)
             j = 0, b++;
         if (j == 0 || min_by_h(i, st[b][0]) == i)
             st[b][0] = i;
     }
-    for (int l = 1; l <= log_2[block_cnt]; l++) {
-        for (int i = 0; i < block_cnt; i++) {
+    FOR(l, 1, log_2[block_cnt]) {
+        REP(i, block_cnt) {
             int ni = i + (1 << (l - 1));
             if (ni >= block_cnt)
                 st[i][l] = st[i][l-1];
@@ -164,24 +164,18 @@ void precompute_block_mask(int m) {
     }
 }
 
-/*
-    blocks[mask][l][r] = offset of the min of [l, r] in a block with that mask
-    built once per mask, from the first block that has it (by the claim above)
-
-    at most 2^(b-1) <= sqrt(m) masks, b^2 entries each: O(sqrt(m) log^2 m)
-    a short last block skips offsets past m; no query reaches them
-*/
+// precompute RMQ for each unique block
 void precompute_blocks(int m) {
-    int possibilities = 1 << (block_size - 1);
-    blocks.assign(possibilities, {});
-    for (int b = 0; b < block_cnt; b++) {
+    int FULL = 1 << (block_size - 1); // number of masks
+    blocks.assign(FULL, {});
+    REP(b, block_cnt) {
         int mask = block_mask[b];
         if (!blocks[mask].empty())
             continue;
-        blocks[mask].assign(block_size, vector<int>(block_size));
-        for (int l = 0; l < block_size; l++) {
+        blocks[mask].assign(block_size, vi(block_size));
+        REP(l, block_size) {
             blocks[mask][l][l] = l;
-            for (int r = l + 1; r < block_size; r++) {
+            FOR(r, l + 1, block_size - 1) {
                 blocks[mask][l][r] = blocks[mask][l][r - 1];
                 if (b * block_size + r < m)
                     blocks[mask][l][r] = min_by_h(b * block_size + blocks[mask][l][r],
@@ -199,7 +193,7 @@ void precompute_lca(int root) {
     euler_tour.reserve(2 * n);
     dfs(root, -1, 0);
 
-    int m = euler_tour.size();
+    int m = sz(euler_tour);
     precompute_log(m);
     block_size = max(1, log_2[m] / 2);
     block_cnt = (m + block_size - 1) / block_size;
