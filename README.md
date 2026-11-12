@@ -28,6 +28,9 @@ cpnew A                  # ./A.cpp from the contest template
 cpbuild A                # sanitizers, warnings, and dbg(...) on
 ./solution < in.txt
 
+cpdiff A --init          # A_brute.cpp and A_gen.cpp to fill in
+cpdiff A -n 1000         # stress test A.cpp against the brute force
+
 cpgen 930                # fetch a LeetCode problem into a C++ stub
 cptest 930               # run it against LeetCode's examples
 ```
@@ -43,7 +46,7 @@ cptest 930               # run it against LeetCode's examples
 | Python notebook | **37** paste-ready snippets in the same categories |
 | Unit tests | **38** across the C++ and Python libraries, run with `cpunit` |
 | Interview problems | **13**, each with C++, Python, and tests |
-| Templates | `contest`, `leetcode`, `minimal`, `oi` |
+| Templates | `contest`, `leetcode`, `minimal`, `oi`, plus `gen` for random tests |
 | Study list | 18 sections, from searching to network communication, ticked as the notebook gains each topic |
 
 <sub>Counted from the files in this repository</sub>
@@ -58,13 +61,13 @@ policies.
 <summary><b>Repository layout</b></summary>
 
 ```text
-templates/    contest, leetcode, minimal, and oi starters
+templates/    contest, leetcode, minimal, and oi starters; gen for cpdiff generators
 notebook/     C++ snippets to paste or include; notebook/databases/ for storage structures
 python/       paste-ready Python snippets, same categories as notebook/
 contests/     solutions by platform: leetcode, codeforces, atcoder, usaco, oi, icpc
 interviews/   interview problems, one folder per question, each with C++, Python, and tests
 todo/         a C++ study list in numbered sections, one stub per topic
-tools/        cpnew, cpgen, cptest, cpunit
+tools/        cpnew, cpgen, cptest, cpunit, cpdiff
 ```
 
 </details>
@@ -158,6 +161,44 @@ Test cases are cached in `contests/leetcode/tests/<number>.json`, shared between
 </details>
 
 <details>
+<summary><b><code>cpdiff &lt;file&gt; [tests...]</code>: stress test against a brute force or test files</b></summary>
+
+Runs a solution against a slow but obviously correct brute force on random tests, and stops at the first test where they disagree. The workflow follows [VNOI's guide to generating tests](https://wiki.vnoi.info/algo/skill/sinh-test-new): a generator, a brute force, and the solution, compared every round.
+
+```
+cpdiff A --init              # create A_brute.cpp (contest template) and A_gen.cpp (templates/gen.cpp)
+cpdiff A                     # 100 rounds: A_gen.cpp -> A_brute.cpp vs A.cpp
+cpdiff A -n 1000             # 1000 rounds
+cpdiff A --seed 27 -n 1      # replay the failing round
+cpdiff A --brute naive --gen mygen   # choose files by name (.cpp or .py)
+cpdiff A tests/              # every tests/X.in against tests/X.out (or .ans)
+cpdiff A 1.in 1.out          # one input against one expected output
+cpdiff A 1.in                # one input against the brute force
+cpdiff A tests/ --eps 1e-6   # numbers within 1e-6 count as equal
+```
+
+- The brute force is found next to the solution as `A_brute`, `brute`, or `naive`; the generator as `A_gen` or `gen`. Each can be `.cpp` or `.py`.
+- The generator runs as `gen <seed>` and prints one test. Seeds go up by one per round, so any round can be replayed. `templates/gen.cpp` has `rnd`, `rnd_vec`, `rnd_perm`, `rnd_str`, and `rnd_tree`.
+- Output is compared token by token, so spacing and trailing newlines do not matter. `--exact` compares bytes.
+- `--tl 2` is the time limit per run in seconds. TLE and runtime errors (with the signal name) are reported like wrong answers.
+- C++ is built with `-O2 -DONLINE_JUDGE` into `.cpdiff/A/` and rebuilt only when the source changes. A failing test is saved there as `fail.in`, `fail.ans` (brute), and `fail.out` (solution).
+
+```
+WRONG ANSWER on round 6, seed 500621391
+token 1 (line 1): expected '-8', got '0'
+input:
+  2
+  -8 -8
+expected (A_brute.cpp):
+  -8
+got (A.cpp):
+  0
+saved to .cpdiff/A/fail.in, fail.ans, fail.out; replay with --seed 500621391 -n 1
+```
+
+</details>
+
+<details>
 <summary><b><code>cpunit &lt;name&gt; [--cpp|--py]</code>: run a library unit test</b></summary>
 
 Finds `notebook/**/tests/<name>_test.cpp` and `python/**/tests/test_<name>.py`, builds C++ with sanitizers, runs Python with `unittest`, and exits nonzero on failure.
@@ -209,6 +250,9 @@ cptest() {
 }
 cpunit() {
     python3 "$CP_ROOT/tools/cpunit.py" "$@"
+}
+cpdiff() {
+    python3 "$CP_ROOT/tools/cpdiff.py" "$@"
 }
 cprun() {
     if [[ -x ./solution ]]; then
