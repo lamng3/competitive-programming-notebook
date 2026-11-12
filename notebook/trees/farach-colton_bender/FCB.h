@@ -33,12 +33,7 @@ public:
         int prefix = lca_in_block(br, 0, r % block_size);
         int ans = min_by_h(suffix, prefix);
         // whole blocks in between
-        if (bl + 1 < br) {
-            int k = log_2[br - bl - 1];
-            int mid_left = st[bl + 1][k];           // blocks [bl+1, bl+1 + 2^k)
-            int mid_right = st[br - (1 << k)][k];   // blocks [br - 2^k, br)
-            ans = min_by_h(ans, min_by_h(mid_left, mid_right));
-        }
+        if (bl + 1 < br) ans = min_by_h(ans, query_sparse_table(bl + 1, br - 1));
         return euler_tour[ans];
     }
 
@@ -88,33 +83,39 @@ private:
     }
 
     // precompute minimum of each block and build sparse table
+    // st[b][j] = index of the min over blocks [b, b + 2^j)
     void precompute_sparse_table(int m) {
         st.assign(block_cnt, vector<int>(log_2[block_cnt] + 1));
-        for (int i = 0, j = 0, b = 0; i < m; i++, j++) {
-            if (j == block_size)
-                j = 0, b++;
-            if (j == 0 || min_by_h(i, st[b][0]) == i)
-                st[b][0] = i;
+
+        // st[b][0] = min of block b: the first entry starts it, later entries replace it if shallower
+        for (int i = 0; i < m; i++) {
+            int b = i / block_size, j = i % block_size;
+            if (j == 0) st[b][0] = i;
+            else st[b][0] = min_by_h(st[b][0], i);
         }
-        for (int l = 1; l <= log_2[block_cnt]; l++) {
-            for (int i = 0; i < block_cnt; i++) {
-                int ni = i + (1 << (l - 1));
-                if (ni >= block_cnt)
-                    st[i][l] = st[i][l-1];
-                else
-                    st[i][l] = min_by_h(st[i][l-1], st[ni][l-1]);
+
+        // st[b][j] = min of its two halves, blocks [b, b + 2^(j-1)) and [b + 2^(j-1), b + 2^j)
+        for (int j = 1; j <= log_2[block_cnt]; j++) {
+            for (int b = 0; b < block_cnt; b++) {
+                if (b + (1 << j) > block_cnt) continue; // run passes the last block, never queried
+                st[b][j] = min_by_h(st[b][j-1], st[b + (1 << (j-1))][j-1]);
             }
         }
+    }
+
+    // min over blocks [L, R], two runs of 2^k blocks that may overlap
+    int query_sparse_table(int L, int R) {
+        int k = log_2[R - L + 1];
+        return min_by_h(st[L][k], st[R - (1 << k) + 1][k]);
     }
 
     // precompute mask for each block
     void precompute_block_mask(int m) {
         block_mask.assign(block_cnt, 0);
-        for (int i = 0, j = 0, b = 0; i < m; i++, j++) {
-            if (j == block_size)
-                j = 0, b++;
-            if (j > 0 && min_by_h(i - 1, i) == i - 1)
-                block_mask[b] += 1 << (j - 1);
+        for (int i = 0; i < m; i++) {
+            int b = i / block_size, j = i % block_size;
+            // bit j-1 = 1 if the tour goes one level deeper from offset j-1 to j
+            if (j > 0 && min_by_h(i - 1, i) == i - 1) block_mask[b] += 1 << (j - 1);
         }
     }
 
