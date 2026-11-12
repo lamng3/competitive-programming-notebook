@@ -24,16 +24,16 @@ public:
     /*
         l = first_visit[v],  r = first_visit[u],  B = block_size
         bl = l / B,  br = r / B
-    
+
         lca(v, u) = euler_tour[ argmin_h [l, r] ]
-    
+
         bl == br:  argmin_h [l, r]                      one block       (lca_in_block)
         bl <  br:  argmin_h of
                      [l, (bl+1)B - 1]                   suffix of bl    (lca_in_block)
                      [(bl+1)B, br*B - 1]                blocks bl+1 .. br-1, empty if bl+1 == br
                                                         = two overlapping runs of 2^k blocks (st)
                      [br*B, r]                          prefix of br    (lca_in_block)
-    
+
         argmin_h = the index whose vertex has the smallest height; each part is O(1)
     */
     int lca(int v, int u) {
