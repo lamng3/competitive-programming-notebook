@@ -62,20 +62,39 @@ const int MOD = 1e9+7;
 
 mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
 
+/*
+    LCA with Farach-Colton and Bender: O(n) build, O(1) per query
+
+    idea
+        walk the tree as an euler tour, writing down every vertex we pass.
+        between the first visits of u and v, the shallowest vertex is lca(u, v).
+        neighbouring heights in the tour differ by exactly 1, which lets the
+        range-min over them answer in O(1) after O(n) work.
+
+    build steps
+        1. log table        lg2[]                            (once, in preprocess)
+        2. euler tour       euler[], nodeStart[], nodeHeight[]
+        3. heights          arr[i] = nodeHeight[euler[i]]
+        4. +-1 RMQ on arr   block sparse table, block masks, mask tables
+
+    query
+        lca(u, v) = euler[argmin(nodeStart[u], nodeStart[v])]
+*/
+
 const int MAX_N = 5e5;
-const int MAX_M = 2 * MAX_N; // euler tour length is 2n - 1
+const int MAX_M = 2 * MAX_N; // longest euler tour, 2n - 1 entries
 
 vi Adj[MAX_N+5];
 
 struct Query { int u, v, id; };
 vector<Query> queries;
 
-/* ============================================================
-    MODULE 0: log table
-    ------------------------------------------------------------
+/*
+    LOG TABLE
+    ---------
     lg2[x] = floor(log2(x)), lg2[0] = -1
-    lg2[x] = lg2[x/2] + 1
-   ============================================================ */
+    built once, up to the longest possible tour
+*/
 vi lg2;
 
 void buildLog(int m) {
@@ -87,23 +106,24 @@ void preprocess() {
     buildLog(MAX_M);
 }
 
-/* ============================================================
-    MODULE 1: euler tour
-    ------------------------------------------------------------
-    input : Adj, root
-    output: euler[]        vertices in visit order, size 2n - 1
-            nodeStart[u]   first index of u in euler
-            nodeHeight[u]  depth of u (root = 0)
+/*
+    EULER TOUR
+    ----------
+    write u, and write it again each time a child returns to it
 
-    tour(u):
-        write u
-        for each child v:
-            tour(v)
-            write u again        <- comes back up through u
+        tour(u):
+            write u
+            for each child v:
+                tour(v)
+                write u
 
-    => neighbouring heights in euler differ by exactly 1
-    => lca(u, v) = shallowest vertex in euler[nodeStart[u] .. nodeStart[v]]
-   ============================================================ */
+    euler[]        every vertex in the order we pass it, 2n - 1 entries
+    nodeStart[u]   where u first appears in euler
+    nodeHeight[u]  depth of u, root = 0
+
+    every step goes down to a child or back up to the parent,
+    so neighbouring heights in euler differ by exactly 1
+*/
 vi euler, nodeStart, nodeHeight;
 
 void eulerTour(int u, int p, int h) {
@@ -125,38 +145,36 @@ void buildEulerTour(int n, int root) {
     eulerTour(root, -1, 0);
 }
 
-/* ============================================================
-    MODULE 2: +-1 RMQ (Farach-Colton and Bender)
-    ------------------------------------------------------------
-    input : arr[0..m) with |arr[i] - arr[i-1]| = 1
-    query : argmin(l, r) = index of the min of arr[l..r], O(1)
-    build : O(m)
+/*
+    +-1 RMQ
+    -------
+    argmin(l, r) = position of the min of arr[l..r], O(1),
+    for any arr whose neighbours differ by exactly 1
 
-    cut arr into blocks of size b = log2(m) / 2, then
-        2a. block sparse table : sparse table over each block's min
-        2b. block masks        : a block is b - 1 steps of +-1 -> a (b-1)-bit mask
-        2c. mask tables        : for every mask, argmin of every [l, r] in a block
-                                 (2^(b-1) <= sqrt(m) masks, b^2 entries each)
+    cut arr into blocks of b = log2(m) / 2 entries; a query splits into
 
-    argmin(l, r):
-        same block       -> mask table
-        different blocks -> min of
-                              suffix of l's block       (mask table)
-                              whole blocks in between   (sparse table)
-                              prefix of r's block       (mask table)
-   ============================================================ */
+        l ... ] [ block ] [ block ] ... [ block ] [ ... r
+        suffix of     whole blocks in between      prefix of
+        l's block                                  r's block
+
+    whole blocks      sparse table over the block minimums
+    inside a block    a block is b - 1 steps of +1 / -1, a (b-1)-bit mask,
+                      so precompute the answers for every mask once
+                      (2^(b-1) <= sqrt(m) masks, b^2 answers each)
+*/
 vi arr;
 int block_size, block_cnt;
 
-// index of the smaller of arr[i], arr[j]
+// position of the smaller of arr[i], arr[j]
 int minIdx(int i, int j) {
     return arr[i] < arr[j] ? i : j;
 }
 
-/* ---------- 2a. block sparse table ----------
-    st[b][0] = argmin of block b
-    st[b][k] = minIdx(st[b][k-1], st[b + 2^(k-1)][k-1])   blocks [b, b + 2^k)
-    query blocks [bl, br]: two overlapping ranges of 2^k blocks
+// ---- sparse table over blocks ----
+/*
+    st[b][0] = position of the min of block b
+    st[b][k] = position of the min of blocks [b, b + 2^k)
+    blocks [bl, br] = two overlapping runs of 2^k blocks, k = lg2[br - bl + 1]
 */
 vii st;
 
@@ -182,13 +200,13 @@ int querySparseTable(int bl, int br) {
     return minIdx(st[bl][k], st[br - (1 << k) + 1][k]);
 }
 
-/* ---------- 2b. block masks (combinatorial bitmasking) ----------
-    inside a block, position j (j >= 1) steps from j-1:
-        bit j-1 = 1  if arr goes up   (arr[j] = arr[j-1] + 1)
-        bit j-1 = 0  if arr goes down (arr[j] = arr[j-1] - 1)
-    the mask alone fixes where the min of any [l, r] is,
-    so blocks with the same mask share one table
-    a short last block keeps 0s for its missing steps, never read by a query
+// ---- block masks ----
+/*
+    bit j-1 of a block's mask is the step from offset j-1 to j
+        1 = up    arr[j] = arr[j-1] + 1
+        0 = down  arr[j] = arr[j-1] - 1
+    blocks with the same mask have their mins in the same places
+    a short last block reads its missing steps as 0; no query reaches them
 */
 vi blockMask;
 
@@ -201,11 +219,11 @@ void buildBlockMasks() {
     }
 }
 
-/* ---------- 2c. mask tables ----------
-    for every mask, every l:
-        walk r = l+1 .. b-1, h += (bit r-1 ? +1 : -1)
-        maskTable[mask][l][r] = position of the lowest h so far
-    depends only on the mask, not on arr
+// ---- mask tables ----
+/*
+    maskTable[mask][l][r] = offset of the min of [l, r] in a block shaped like mask
+    walk right from l with a running height h, keep where h was lowest
+    built from the mask alone, never reads arr
 */
 vector<vii> maskTable;
 
@@ -225,18 +243,19 @@ void buildMaskTables() {
     }
 }
 
-// argmin of arr over positions [l, r] of block b (l, r are offsets in the block)
+// position of the min over offsets [l, r] of block b
 int queryInBlock(int b, int l, int r) {
     return b * block_size + maskTable[blockMask[b]][l][r];
 }
 
+// ---- build and query ----
 void buildRMQ() {
     int m = sz(arr);
     block_size = max(1, lg2[m] / 2);
     block_cnt = (m + block_size - 1) / block_size;
-    buildBlockSparseTable(); // 2a
-    buildBlockMasks();       // 2b
-    buildMaskTables();       // 2c
+    buildBlockSparseTable();
+    buildBlockMasks();
+    buildMaskTables();
 }
 
 int argmin(int l, int r) {
@@ -249,12 +268,11 @@ int argmin(int l, int r) {
     return ans;
 }
 
-/* ============================================================
-    MODULE 3: LCA = euler tour + +-1 RMQ
-    ------------------------------------------------------------
-    arr[i] = nodeHeight[euler[i]]
-    lca(u, v) = euler[argmin(nodeStart[u], nodeStart[v])]
-   ============================================================ */
+/*
+    LCA
+    ---
+    tour the tree, read the heights along the tour, build the +-1 RMQ on them
+*/
 void buildLCA(int n, int root) {
     buildEulerTour(n, root);
     arr.resize(sz(euler));
@@ -283,7 +301,7 @@ void solve() {
         queries.pb({u, v, i});
     }
 
-    // build lca, root = vertex 1
+    // build lca, rooted at vertex 1
     buildLCA(n, 0);
 
     // answer queries

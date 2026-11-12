@@ -2,18 +2,37 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-// https://cp-algorithms.com/graph/lca_farachcoltonbender.html
-//
-// Farach-Colton and Bender: LCA in O(n) build, O(1) per query.
-// Same modules as notebook/examples/trees/farach-colton_bender/fcb.cpp.
-//
-//   FCB fcb(adj, root);    // adj: 0-indexed, undirected
-//   fcb.lca(u, v);
-//   fcb.argmin(l, r);      // the +-1 RMQ on its own, positions in the euler tour
-//
-// eulerTour is recursive: a path of 5e5 vertices needs a big stack
-// (fine on Codeforces; locally run `ulimit -s 65520` first).
+/*
+    LCA with Farach-Colton and Bender: O(n) build, O(1) per query
+    https://cp-algorithms.com/graph/lca_farachcoltonbender.html
+    worked example: notebook/examples/trees/farach-colton_bender/fcb.cpp
 
+    usage
+        FCB fcb(adj, root);    adj is 0-indexed and undirected
+        fcb.lca(u, v);
+        fcb.dist(u, v);
+        fcb.depth(u);
+        fcb.argmin(l, r);      the +-1 RMQ on its own, over euler tour positions
+
+    idea
+        walk the tree as an euler tour, writing down every vertex we pass.
+        between the first visits of u and v, the shallowest vertex is lca(u, v).
+        neighbouring heights in the tour differ by exactly 1, which lets the
+        range-min over them answer in O(1) after O(n) work.
+
+    build steps
+        1. euler tour       euler[], nodeStart[], nodeHeight[]
+        2. heights          arr[i] = nodeHeight[euler[i]]
+        3. log table        lg2[]
+        4. +-1 RMQ on arr   block sparse table, block masks, mask tables
+
+    query
+        lca(u, v) = euler[argmin(nodeStart[u], nodeStart[v])]
+
+    note
+        eulerTour is recursive, so a path of 5e5 vertices needs a big stack:
+        fine on Codeforces, locally run `ulimit -s 65520` first
+*/
 class FCB {
 public:
     FCB(const vector<vector<int>>& _adj, int root = 0) : adj(_adj) {
@@ -21,26 +40,23 @@ public:
         buildEulerTour(n, root);
         arr.resize(euler.size());
         for (int i = 0; i < (int)euler.size(); i++) arr[i] = nodeHeight[euler[i]];
+        buildLog(arr.size());
         buildRMQ();
     }
 
-    /* ============================================================
-        MODULE 3: LCA = euler tour + +-1 RMQ
-        ------------------------------------------------------------
-        arr[i] = nodeHeight[euler[i]]
-        lca(u, v) = euler[argmin(nodeStart[u], nodeStart[v])]
-       ============================================================ */
     int lca(int u, int v) {
         return euler[argmin(nodeStart[u], nodeStart[v])];
     }
 
-    int depth(int u) { return nodeHeight[u]; }
+    int depth(int u) {
+        return nodeHeight[u];
+    }
 
     int dist(int u, int v) {
         return nodeHeight[u] + nodeHeight[v] - 2 * nodeHeight[lca(u, v)];
     }
 
-    // index of the min of arr[l..r] (either order)
+    // position of the min of arr[l..r], l and r in either order
     int argmin(int l, int r) {
         if (l > r) swap(l, r);
         int bl = l / block_size, br = r / block_size;
@@ -54,36 +70,24 @@ public:
 private:
     vector<vector<int>> adj;
 
-    /* ============================================================
-        MODULE 0: log table
-        ------------------------------------------------------------
-        lg2[x] = floor(log2(x)), lg2[0] = -1
-        lg2[x] = lg2[x/2] + 1
-       ============================================================ */
-    vector<int> lg2;
+    /*
+        EULER TOUR
+        ----------
+        write u, and write it again each time a child returns to it
 
-    void buildLog(int m) {
-        lg2.assign(m+1, -1);
-        for (int i = 1; i <= m; i++) lg2[i] = lg2[i/2] + 1;
-    }
+            tour(u):
+                write u
+                for each child v:
+                    tour(v)
+                    write u
 
-    /* ============================================================
-        MODULE 1: euler tour
-        ------------------------------------------------------------
-        input : adj, root
-        output: euler[]        vertices in visit order, size 2n - 1
-                nodeStart[u]   first index of u in euler
-                nodeHeight[u]  depth of u (root = 0)
+        euler[]        every vertex in the order we pass it, 2n - 1 entries
+        nodeStart[u]   where u first appears in euler
+        nodeHeight[u]  depth of u, root = 0
 
-        tour(u):
-            write u
-            for each child v:
-                tour(v)
-                write u again        <- comes back up through u
-
-        => neighbouring heights in euler differ by exactly 1
-        => lca(u, v) = shallowest vertex in euler[nodeStart[u] .. nodeStart[v]]
-       ============================================================ */
+        every step goes down to a child or back up to the parent,
+        so neighbouring heights in euler differ by exactly 1
+    */
     vector<int> euler, nodeStart, nodeHeight;
 
     void eulerTour(int u, int p, int h) {
@@ -105,38 +109,48 @@ private:
         eulerTour(root, -1, 0);
     }
 
-    /* ============================================================
-        MODULE 2: +-1 RMQ (Farach-Colton and Bender)
-        ------------------------------------------------------------
-        input : arr[0..m) with |arr[i] - arr[i-1]| = 1
-        query : argmin(l, r) = index of the min of arr[l..r], O(1)
-        build : O(m)
+    /*
+        LOG TABLE
+        ---------
+        lg2[x] = floor(log2(x)), lg2[0] = -1
+    */
+    vector<int> lg2;
 
-        cut arr into blocks of size b = log2(m) / 2, then
-            2a. block sparse table : sparse table over each block's min
-            2b. block masks        : a block is b - 1 steps of +-1 -> a (b-1)-bit mask
-            2c. mask tables        : for every mask, argmin of every [l, r] in a block
-                                     (2^(b-1) <= sqrt(m) masks, b^2 entries each)
+    void buildLog(int m) {
+        lg2.assign(m+1, -1);
+        for (int i = 1; i <= m; i++) lg2[i] = lg2[i/2] + 1;
+    }
 
-        argmin(l, r):
-            same block       -> mask table
-            different blocks -> min of
-                                  suffix of l's block       (mask table)
-                                  whole blocks in between   (sparse table)
-                                  prefix of r's block       (mask table)
-       ============================================================ */
+    /*
+        +-1 RMQ
+        -------
+        argmin(l, r) = position of the min of arr[l..r], O(1),
+        for any arr whose neighbours differ by exactly 1
+
+        cut arr into blocks of b = log2(m) / 2 entries; a query splits into
+
+            l ... ] [ block ] [ block ] ... [ block ] [ ... r
+            suffix of     whole blocks in between      prefix of
+            l's block                                  r's block
+
+        whole blocks      sparse table over the block minimums
+        inside a block    a block is b - 1 steps of +1 / -1, a (b-1)-bit mask,
+                          so precompute the answers for every mask once
+                          (2^(b-1) <= sqrt(m) masks, b^2 answers each)
+    */
     vector<int> arr;
     int block_size, block_cnt;
 
-    // index of the smaller of arr[i], arr[j]
+    // position of the smaller of arr[i], arr[j]
     int minIdx(int i, int j) {
         return arr[i] < arr[j] ? i : j;
     }
 
-    /* ---------- 2a. block sparse table ----------
-        st[b][0] = argmin of block b
-        st[b][k] = minIdx(st[b][k-1], st[b + 2^(k-1)][k-1])   blocks [b, b + 2^k)
-        query blocks [bl, br]: two overlapping ranges of 2^k blocks
+    // ---- sparse table over blocks ----
+    /*
+        st[b][0] = position of the min of block b
+        st[b][k] = position of the min of blocks [b, b + 2^k)
+        blocks [bl, br] = two overlapping runs of 2^k blocks, k = lg2[br - bl + 1]
     */
     vector<vector<int>> st;
 
@@ -162,13 +176,13 @@ private:
         return minIdx(st[bl][k], st[br - (1 << k) + 1][k]);
     }
 
-    /* ---------- 2b. block masks (combinatorial bitmasking) ----------
-        inside a block, position j (j >= 1) steps from j-1:
-            bit j-1 = 1  if arr goes up   (arr[j] = arr[j-1] + 1)
-            bit j-1 = 0  if arr goes down (arr[j] = arr[j-1] - 1)
-        the mask alone fixes where the min of any [l, r] is,
-        so blocks with the same mask share one table
-        a short last block keeps 0s for its missing steps, never read by a query
+    // ---- block masks ----
+    /*
+        bit j-1 of a block's mask is the step from offset j-1 to j
+            1 = up    arr[j] = arr[j-1] + 1
+            0 = down  arr[j] = arr[j-1] - 1
+        blocks with the same mask have their mins in the same places
+        a short last block reads its missing steps as 0; no query reaches them
     */
     vector<int> blockMask;
 
@@ -181,11 +195,11 @@ private:
         }
     }
 
-    /* ---------- 2c. mask tables ----------
-        for every mask, every l:
-            walk r = l+1 .. b-1, h += (bit r-1 ? +1 : -1)
-            maskTable[mask][l][r] = position of the lowest h so far
-        depends only on the mask, not on arr
+    // ---- mask tables ----
+    /*
+        maskTable[mask][l][r] = offset of the min of [l, r] in a block shaped like mask
+        walk right from l with a running height h, keep where h was lowest
+        built from the mask alone, never reads arr
     */
     vector<vector<vector<int>>> maskTable;
 
@@ -205,18 +219,18 @@ private:
         }
     }
 
-    // argmin of arr over positions [l, r] of block b (l, r are offsets in the block)
+    // position of the min over offsets [l, r] of block b
     int queryInBlock(int b, int l, int r) {
         return b * block_size + maskTable[blockMask[b]][l][r];
     }
 
+    // ---- build ----
     void buildRMQ() {
         int m = arr.size();
-        buildLog(m);
         block_size = max(1, lg2[m] / 2);
         block_cnt = (m + block_size - 1) / block_size;
-        buildBlockSparseTable(); // 2a
-        buildBlockMasks();       // 2b
-        buildMaskTables();       // 2c
+        buildBlockSparseTable();
+        buildBlockMasks();
+        buildMaskTables();
     }
 };
