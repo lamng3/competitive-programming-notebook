@@ -5,13 +5,10 @@ using namespace std;
 /*
     LCA with Farach-Colton and Bender: O(n) build, O(1) per query
     follows https://cp-algorithms.com/graph/lca_farachcoltonbender.html
-    notes: README.md next to this file
+    why it works: README.md next to this file
 
-    lca(u, v) = shallowest vertex in euler_tour[first_visit[u] .. first_visit[v]]
-
-    usage
-        FCB fcb(adj, root);    adj is 0-indexed and undirected
-        fcb.lca(u, v);  fcb.dist(u, v);  fcb.depth(u);
+    FCB fcb(adj, root);    adj is 0-indexed and undirected
+    fcb.lca(u, v);  fcb.dist(u, v);  fcb.depth(u);
 
     dfs is recursive: a path of 5e5 vertices needs `ulimit -s 65520` locally
 */
@@ -21,21 +18,6 @@ public:
         precompute_lca(root);
     }
 
-    /*
-        l = first_visit[v],  r = first_visit[u],  B = block_size
-        bl = l / B,  br = r / B
-
-        lca(v, u) = euler_tour[ argmin_h [l, r] ]
-
-        bl == br:  argmin_h [l, r]                      one block       (lca_in_block)
-        bl <  br:  argmin_h of
-                     [l, (bl+1)B - 1]                   suffix of bl    (lca_in_block)
-                     [(bl+1)B, br*B - 1]                blocks bl+1 .. br-1, empty if bl+1 == br
-                                                        = two overlapping runs of 2^k blocks (st)
-                     [br*B, r]                          prefix of br    (lca_in_block)
-
-        argmin_h = the index whose vertex has the smallest height; each part is O(1)
-    */
     int lca(int v, int u) {
         int l = first_visit[v];
         int r = first_visit[u];
@@ -43,11 +25,14 @@ public:
             swap(l, r);
         int bl = l / block_size;
         int br = r / block_size;
+        // both ends in one block
         if (bl == br)
             return euler_tour[lca_in_block(bl, l % block_size, r % block_size)];
+        // suffix of l's block, prefix of r's block
         int suffix = lca_in_block(bl, l % block_size, block_size - 1);
         int prefix = lca_in_block(br, 0, r % block_size);
         int ans = min_by_h(suffix, prefix);
+        // whole blocks in between
         if (bl + 1 < br) {
             int k = log_2[br - bl - 1];
             int mid_left = st[bl + 1][k];           // blocks [bl+1, bl+1 + 2^k)
@@ -70,27 +55,14 @@ private:
     vector<vector<int>> adj;
 
     int block_size, block_cnt;
-    vector<int> first_visit;              // first index of v in euler_tour
-    vector<int> euler_tour;               // v written on entry and after each child returns
-    vector<int> height;                   // depth of v, root = 0
-    vector<int> log_2;                    // log_2[x] = floor(log2(x))
-    vector<vector<int>> st;               // st[b][k] = min of blocks [b, b + 2^k)
-    vector<vector<vector<int>>> blocks;   // blocks[mask][l][r] = min of [l, r] inside a block
-    vector<int> block_mask;               // bit j-1 = 1 if height goes +1 from offset j-1 to j
+    vector<int> first_visit;
+    vector<int> euler_tour;
+    vector<int> height;
+    vector<int> log_2;
+    vector<vector<int>> st;
+    vector<vector<vector<int>>> blocks;
+    vector<int> block_mask;
 
-    /*
-        euler tour: write v on entry, and again each time a child returns to v
-
-        claim: the shallowest vertex between a visit of u and a visit of v is lca(u, v)
-        proof:
-            - u and v are in lca's subtree, and the tour stays inside that subtree
-              from entering lca to leaving it, so nothing shallower than lca appears
-            - from u's branch to v's branch the tour must come back up to lca
-              (if u is the lca, u itself is in the range)
-        any visit works, so first_visit is enough: no last visit is needed
-
-        each step goes to a child or back to the parent, so neighbouring heights differ by 1
-    */
     void dfs(int v, int p, int h) {
         first_visit[v] = euler_tour.size();
         euler_tour.push_back(v);
@@ -100,30 +72,22 @@ private:
             if (u == p)
                 continue;
             dfs(u, v, h + 1);
-            euler_tour.push_back(v); // back up through v
+            euler_tour.push_back(v);
         }
     }
 
-    // of two euler_tour indices, the one whose vertex is shallower
     int min_by_h(int i, int j) {
         return height[euler_tour[i]] < height[euler_tour[j]] ? i : j;
     }
 
+    // precompute all log values
     void precompute_log(int m) {
         log_2.assign(m + 1, -1);
         for (int i = 1; i <= m; i++)
             log_2[i] = log_2[i / 2] + 1;
     }
 
-    /*
-        cut the tour into blocks of size log2(m) / 2
-        st[b][0] = min of block b
-        st[b][k] = min of st[b][k-1] and st[b + 2^(k-1)][k-1]
-
-        m / block_size blocks, each with log(m) levels: O(m) in total
-        a query over blocks uses two runs of 2^k blocks that may overlap,
-        which is fine for min: min(x, x) = x
-    */
+    // precompute minimum of each block and build sparse table
     void precompute_sparse_table(int m) {
         st.assign(block_cnt, vector<int>(log_2[block_cnt] + 1));
         for (int i = 0, j = 0, b = 0; i < m; i++, j++) {
@@ -143,14 +107,7 @@ private:
         }
     }
 
-    /*
-        a block of size b is b - 1 steps of +1 or -1, so its shape is a (b-1)-bit mask
-        bit j-1 = 1 when height goes +1 from offset j-1 to j
-
-        claim: the mask alone decides where the min of [l, r] is
-        proof: height at offset r = height at offset 0 + (sum of steps before r),
-               so two blocks with the same mask differ only by a constant
-    */
+    // precompute mask for each block
     void precompute_block_mask(int m) {
         block_mask.assign(block_cnt, 0);
         for (int i = 0, j = 0, b = 0; i < m; i++, j++) {
@@ -200,7 +157,6 @@ private:
         precompute_blocks(m);
     }
 
-    // euler_tour index of the min over offsets [l, r] of block b
     int lca_in_block(int b, int l, int r) {
         return blocks[block_mask[b]][l][r] + b * block_size;
     }

@@ -32,11 +32,11 @@ lca(u, v) = shallowest vertex in euler_tour[first_visit[u] .. first_visit[v]]
 |:--|:--|
 | `dfs(v, p, h)` | writes `v`, recurses into each child, writes `v` again after each one |
 | `min_by_h(i, j)` | of two `euler_tour` indices, the one whose vertex is shallower |
-| `precompute_log(m)` | `log_2[x] = log_2[x/2] + 1`, with `log_2[0] = -1` |
+| `precompute_log(m)` | `log_2[x] = log_2[x/2] + 1`, with `log_2[0] = -1`; `fcb.cpp` builds it once in `preprocess` up to `2 * MAX_N` |
 | `precompute_sparse_table(m)` | `st[b][0]` = min of block `b`; `st[b][k]` combines two runs of `2^(k-1)` blocks |
 | `precompute_block_mask(m)` | one bit per step inside each block, 1 = height + 1 |
 | `precompute_blocks(m)` | for each mask, the min of every `[l, r]` inside a block of that shape |
-| `precompute_lca(root)` | runs the tour, picks the block size, then the three steps above |
+| `precompute_lca(root)` | runs the tour, picks the block size, then the three steps above (`FCB.h` also builds `log_2` here) |
 | `lca_in_block(b, l, r)` | `blocks[block_mask[b]][l][r]` turned back into a tour index |
 | `lca(v, u)` | one block, or the suffix of `l`'s block + whole blocks in between + the prefix of `r`'s block |
 
