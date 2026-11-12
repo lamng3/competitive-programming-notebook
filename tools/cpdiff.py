@@ -10,16 +10,25 @@ Usage:
     cpdiff A tests/             check every tests/X.in against tests/X.out (or .ans)
     cpdiff A 1.in 1.out         check one input against one expected output
     cpdiff A 1.in               check one input against the brute force
+    cpdiff A --gen A_max --no-brute -n 10 --tl 1   timing: max-size tests, no brute force
 
 Options:
     --tl SEC      time limit per run, default 2 (the generator and brute get 5x that)
     --eps EPS     treat numbers within EPS (absolute or relative) as equal
     --exact       compare bytes instead of whitespace-separated tokens
     --keep-going  in file mode, keep checking after the first failure
+    --no-brute    timing mode: run only the solution on generated (large) tests and
+                  report crashes, TLE, and the slowest seed
 
 A program is a .cpp (compiled with -O2 -DONLINE_JUDGE, cached by mtime) or a .py file.
-The brute force defaults to A_brute, brute, or naive; the generator to A_gen or gen
-(.cpp or .py, looked up next to A). The generator is run as `gen <seed>` and prints one test.
+The brute force defaults to A_brute, A_trau, brute, trau, or naive; the generator to A_gen,
+A_sinh, gen, or sinh (.cpp or .py, looked up next to A). The generator is run as `gen <seed>`
+and prints one test.
+
+File I/O works too: a program that does freopen("comnet.inp", "r", stdin) and
+freopen("comnet.out", "w", stdout) (or ifstream/ofstream with literal names, or names built
+from #define TASK "comnet") gets the test in comnet.inp and is judged on comnet.out. Each
+program runs in its own folder under .cpdiff/A/, so .out and .ans files never collide.
 A failing test is saved to .cpdiff/A/ next to the solution as fail.in, fail.ans, fail.out.
 """
 
@@ -33,7 +42,9 @@ import time
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATES_DIR = os.path.join(REPO_ROOT, "templates")
-CXX_FLAGS = ["-std=c++20", "-O2", "-DONLINE_JUDGE", "-w"]
+# -include fstream: some hand-made bits/stdc++.h copies for clang on macOS leave out
+# <fstream>, which GCC's has, so judge-style code using ifstream/ofstream fails to build
+CXX_FLAGS = ["-std=c++20", "-O2", "-DONLINE_JUDGE", "-w", "-include", "fstream"]
 INPUT_EXTS = (".in", ".inp")
 ANSWER_EXTS = (".out", ".ans", ".ok", ".a")
 
@@ -44,6 +55,8 @@ RED, GREEN, YELLOW, DIM, BOLD, RESET = (
 TTY = sys.stdout.isatty()
 CLEAR = "\r\033[K" if TTY else ""
 SHOW_LINES = 25
+BRUTE_NAMES = ["{stem}_brute", "{stem}_trau", "{stem}brute", "brute", "trau", "naive"]
+GEN_NAMES = ["{stem}_gen", "{stem}_sinh", "{stem}gen", "gen", "sinh"]
 
 
 def die(msg, code=2):
@@ -72,6 +85,53 @@ def find_role(stem, base_dir, names):
     return None
 
 
+STRING_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+
+def strip_comments(src):
+    """Drop // and /* */ comments, keeping string literals intact."""
+    return re.sub(r'"(?:[^"\\]|\\.)*"|//[^\n]*|/\*.*?\*/',
+                  lambda m: m.group(0) if m.group(0).startswith('"') else " ", src, flags=re.S)
+
+
+def detect_io_files(path):
+    """File names a C++ program reads its input from and writes its output to.
+
+    Finds freopen("x.inp", "r", stdin) / freopen("x.out", "w", stdout) and
+    ifstream f("x.inp") / ofstream f("x.out"), including names built from a
+    constant such as #define TASK "comnet" ... freopen(TASK".inp", ...) or
+    const string NAME = "comnet"; ... (NAME + ".inp").c_str().
+    """
+    if not path.endswith(".cpp"):
+        return [], []
+    with open(path, errors="replace") as f:
+        src = strip_comments(f.read())
+    consts = dict(re.findall(r'#\s*define\s+(\w+)\s+"([^"]*)"', src))
+    consts.update(re.findall(r'\b(?:string|char\s*\*?|auto)\s+(\w+)(?:\[\])?\s*=\s*"([^"]*)"', src))
+
+    def name_of(expr):
+        parts = []
+        for tok in re.findall(r'"(?:[^"\\]|\\.)*"|\w+', expr):
+            if tok.startswith('"'):
+                parts.append(tok[1:-1])
+            elif tok in consts:
+                parts.append(consts[tok])
+        return "".join(parts) or None
+
+    ins, outs = [], []
+    for expr, mode, stream in re.findall(
+            r'freopen\s*\(\s*(.+?)\s*,\s*"([rwa])[+b]*"\s*,\s*(stdin|stdout)\s*\)', src):
+        name = name_of(expr)
+        if name:
+            (ins if stream == "stdin" else outs).append(name)
+    for kind, expr in re.findall(r'\b(ifstream|ofstream)\s+\w+\s*[({]\s*(.+?)\s*[)}]\s*;', src):
+        name = name_of(expr)
+        if name:
+            (ins if kind == "ifstream" else outs).append(name)
+    safe = lambda n: not os.path.isabs(n) and ".." not in n.split("/")
+    return [n for n in ins if safe(n)], [n for n in outs if safe(n)]
+
+
 class Program:
     def __init__(self, path, build_dir):
         self.path = path
@@ -79,6 +139,16 @@ class Program:
         stem, ext = os.path.splitext(self.name)
         self.is_py = ext == ".py"
         self.exe = None if self.is_py else os.path.join(build_dir, stem)
+        # each program runs in its own scratch folder, so file-based I/O
+        # (comnet.inp -> comnet.out) never collides between the three programs
+        self.run_dir = os.path.join(build_dir, "run_" + self.name.replace(".", "_"))
+        self.in_files, self.out_files = detect_io_files(path)
+
+    def describe_io(self):
+        if not (self.in_files or self.out_files):
+            return None
+        return (f"{self.name} reads {', '.join(self.in_files) or 'stdin'}"
+                f", writes {', '.join(self.out_files) or 'stdout'}")
 
     def build(self):
         if self.is_py:
@@ -98,14 +168,36 @@ class Program:
         return [self.exe, *args]
 
     def run(self, stdin, tl, *args):
-        """Return (verdict, stdout, stderr, seconds). verdict is OK, TLE, or RE <code>."""
+        """Return (verdict, output, stderr, seconds). verdict is OK, TLE, or RE <code>.
+
+        The input goes to stdin and to every input file the program opens; the
+        output is the file it writes if there is one, else its stdout.
+        """
+        shutil.rmtree(self.run_dir, ignore_errors=True)
+        os.makedirs(self.run_dir)
+        for name in self.in_files:
+            dest = os.path.join(self.run_dir, name)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            with open(dest, "wb") as f:
+                f.write(stdin or b"")
         start = time.perf_counter()
         try:
-            r = subprocess.run(self.cmd(*args), input=stdin, capture_output=True, timeout=tl,
-                               cwd=os.path.dirname(self.path))
+            r = subprocess.run(self.cmd(*args), input=stdin or b"", capture_output=True, timeout=tl,
+                               cwd=self.run_dir)
         except subprocess.TimeoutExpired as e:
             return "TLE", e.stdout or b"", e.stderr or b"", tl
         took = time.perf_counter() - start
+        out = r.stdout
+        written = [os.path.join(self.run_dir, n) for n in self.out_files]
+        written = [p for p in written if os.path.isfile(p)]
+        if not written and not out.strip():
+            # an output file we did not detect: take the one new file, if exactly one appeared
+            fresh = [os.path.join(self.run_dir, n) for n in os.listdir(self.run_dir)
+                     if n not in self.in_files and os.path.isfile(os.path.join(self.run_dir, n))]
+            written = fresh if len(fresh) == 1 else []
+        if written:
+            with open(written[-1], "rb") as f:
+                out = f.read()
         if r.returncode == 0:
             verdict = "OK"
         elif r.returncode < 0:
@@ -115,7 +207,7 @@ class Program:
                 verdict = f"RE (signal {-r.returncode})"
         else:
             verdict = f"RE (exit {r.returncode})"
-        return verdict, r.stdout, r.stderr, took
+        return verdict, out, r.stderr, took
 
 
 # ---------- comparing outputs ----------
@@ -190,9 +282,11 @@ def init(stem, base_dir, force):
 
 
 def stress(sol, brute, gen, rounds, seed, tl, exact, eps, fail_dir):
-    print(f"{BOLD}{sol.name}{RESET} vs {BOLD}{brute.name}{RESET} "
-          f"on {BOLD}{gen.name}{RESET}, {rounds} rounds from seed {seed}")
-    slow = 0.0
+    """brute=None is timing mode: only check the solution finishes within tl without crashing."""
+    against = f" vs {BOLD}{brute.name}{RESET}" if brute else " (timing only, no brute force)"
+    print(f"{BOLD}{sol.name}{RESET}{against} on {BOLD}{gen.name}{RESET}, "
+          f"{rounds} rounds from seed {seed}, time limit {tl:g}s")
+    slow, slow_seed = 0.0, seed
     for i in range(rounds):
         s = seed + i
         if TTY:
@@ -204,16 +298,24 @@ def stress(sol, brute, gen, rounds, seed, tl, exact, eps, fail_dir):
             show_stderr(gen.name, err)
             die(f"Generator {v} on seed {s}", 1)
 
-        v, ans, err_b, _ = brute.run(test, tl * 5)
-        if v != "OK":
+        if not test.strip():
             print(CLEAR, end="")
-            show("input:", test)
-            show_stderr(brute.name, err_b)
-            die(f"Brute force {v} on seed {s}", 1)
+            die(f"Generator printed nothing on seed {s}. It should print one test to stdout "
+                f"(or write exactly one file).", 1)
+
+        ans = b""
+        if brute:
+            v, ans, err_b, _ = brute.run(test, tl * 5)
+            if v != "OK":
+                print(CLEAR, end="")
+                show("input:", test)
+                show_stderr(brute.name, err_b)
+                die(f"Brute force {v} on seed {s}", 1)
 
         v, out, err_s, took = sol.run(test, tl)
-        slow = max(slow, took)
-        problem = None if v != "OK" else compare(ans, out, exact, eps)
+        if took > slow:
+            slow, slow_seed = took, s
+        problem = None if v != "OK" or not brute else compare(ans, out, exact, eps)
         if v == "OK" and problem is None:
             continue
 
@@ -223,7 +325,8 @@ def stress(sol, brute, gen, rounds, seed, tl, exact, eps, fail_dir):
         if problem:
             print(f"{RED}{problem}{RESET}")
         show("input:", test)
-        show(f"expected ({brute.name}):", ans, GREEN)
+        if brute:
+            show(f"expected ({brute.name}):", ans, GREEN)
         show(f"got ({sol.name}):", out, RED)
         show_stderr(sol.name, err_s)
         rel = os.path.relpath(fail_dir)
@@ -231,7 +334,7 @@ def stress(sol, brute, gen, rounds, seed, tl, exact, eps, fail_dir):
         return 1
 
     print(f"{CLEAR}{GREEN}{BOLD}All {rounds} rounds passed{RESET} "
-          f"(seeds {seed}..{seed + rounds - 1}, slowest {slow * 1000:.0f} ms)")
+          f"(seeds {seed}..{seed + rounds - 1}, slowest {slow * 1000:.0f} ms on seed {slow_seed})")
     return 0
 
 
@@ -314,11 +417,11 @@ def check_files(sol, brute, cases, tl, exact, eps, keep_going):
 
 def parse_args(argv):
     opts = {"n": 100, "seed": None, "tl": 2.0, "eps": None, "exact": False, "brute": None,
-            "gen": None, "init": False, "force": False, "keep_going": False}
+            "gen": None, "init": False, "force": False, "keep_going": False, "no_brute": False}
     takes_value = {"-n": "n", "--seed": "seed", "--tl": "tl", "--eps": "eps",
                    "--brute": "brute", "--gen": "gen"}
     flags = {"--exact": "exact", "--init": "init", "-f": "force", "--force": "force",
-             "--keep-going": "keep_going"}
+             "--keep-going": "keep_going", "--no-brute": "no_brute"}
     pos = []
     it = iter(argv)
     for a in it:
@@ -378,7 +481,7 @@ def main():
             return path
         return find_role(stem, base_dir, defaults)
 
-    brute_path = pick("brute force", opts["brute"], ["{stem}_brute", "{stem}brute", "brute", "naive"])
+    brute_path = pick("brute force", opts["brute"], BRUTE_NAMES)
     files = pos[1:]
     if files:
         cases = collect_cases(files)
@@ -390,23 +493,33 @@ def main():
         for p in (sol, brute):
             if p:
                 p.build()
+                io = p.describe_io()
+                if io:
+                    print(f"{DIM}{io}{RESET}")
         return check_files(sol, brute, cases, opts["tl"], opts["exact"], opts["eps"], opts["keep_going"])
 
-    gen_path = pick("generator", opts["gen"], ["{stem}_gen", "{stem}gen", "gen"])
-    missing = [r for r, p in (("brute force", brute_path), ("generator", gen_path)) if not p]
+    gen_path = pick("generator", opts["gen"], GEN_NAMES)
+    if opts["no_brute"]:
+        brute_path = None
+    missing = [r for r, p in (("brute force", brute_path), ("generator", gen_path))
+               if not p and not (r == "brute force" and opts["no_brute"])]
     if missing:
         die(f"Missing {' and '.join(missing)} next to {os.path.basename(sol_path)}.\n"
-            f"Looked for {stem}_brute / brute / naive and {stem}_gen / gen (.cpp or .py).\n"
-            f"Create both with: cpdiff {target} --init")
-    if os.path.samefile(brute_path, sol_path):
+            f"Looked for {stem}_brute / {stem}_trau / brute / naive and {stem}_gen / gen "
+            f"(.cpp or .py).\nCreate both with: cpdiff {target} --init")
+    if brute_path and os.path.samefile(brute_path, sol_path):
         die("The brute force and the solution are the same file.")
 
-    sol, brute, gen = (Program(p, work) for p in (sol_path, brute_path, gen_path))
+    sol, gen = Program(sol_path, work), Program(gen_path, work)
+    brute = Program(brute_path, work) if brute_path else None
     for p in (gen, brute, sol):
-        p.build()
+        if p:
+            p.build()
+            io = p.describe_io()
+            if io:
+                print(f"{DIM}{io}{RESET}")
     seed = opts["seed"] if opts["seed"] is not None else int(time.time() * 1000) % 10**9
     return stress(sol, brute, gen, opts["n"], seed, opts["tl"], opts["exact"], opts["eps"], work)
-
 
 if __name__ == "__main__":
     try:

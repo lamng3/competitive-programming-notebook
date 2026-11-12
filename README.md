@@ -175,13 +175,16 @@ cpdiff A tests/              # every tests/X.in against tests/X.out (or .ans)
 cpdiff A 1.in 1.out          # one input against one expected output
 cpdiff A 1.in                # one input against the brute force
 cpdiff A tests/ --eps 1e-6   # numbers within 1e-6 count as equal
+cpdiff A --gen A_max --no-brute -n 10 --tl 1   # timing: max-size tests, no brute force
 ```
 
-- The brute force is found next to the solution as `A_brute`, `brute`, or `naive`; the generator as `A_gen` or `gen`. Each can be `.cpp` or `.py`.
-- The generator runs as `gen <seed>` and prints one test. Seeds go up by one per round, so any round can be replayed. `templates/gen.cpp` has `rnd`, `rnd_vec`, `rnd_perm`, `rnd_str`, and `rnd_tree`.
+- The brute force is found next to the solution as `A_brute`, `A_trau`, `brute`, `trau`, or `naive`; the generator as `A_gen`, `A_sinh`, `gen`, or `sinh`. Each can be `.cpp` or `.py`.
+- The generator runs as `gen <seed>` and prints one test (or writes exactly one file). Seeds go up by one per round, so any round can be replayed. `templates/gen.cpp` has `rnd`, `rnd_vec`, `rnd_perm`, `rnd_str`, and trees: `rnd_tree`, `rnd_tree_prufer` (uniformly random), and `special_tree` (path, star, binary, broom).
+- OI-style file I/O works unchanged. A program with `freopen("comnet.inp", "r", stdin)` and `freopen("comnet.out", "w", stdout)` gets the test in `comnet.inp` and is judged on `comnet.out`. `ifstream`/`ofstream` and names built from `#define TASK "comnet"` or `const string NAME` are detected too. Each program runs in its own folder, so the solution's `.out` and the brute's `.ans` never collide.
+- `--no-brute` is the timing check: run the solution alone on large generated tests and report crashes, TLE, and the slowest seed.
 - Output is compared token by token, so spacing and trailing newlines do not matter. `--exact` compares bytes.
 - `--tl 2` is the time limit per run in seconds. TLE and runtime errors (with the signal name) are reported like wrong answers.
-- C++ is built with `-O2 -DONLINE_JUDGE` into `.cpdiff/A/` and rebuilt only when the source changes. A failing test is saved there as `fail.in`, `fail.ans` (brute), and `fail.out` (solution).
+- C++ is built with `-O2 -DONLINE_JUDGE -include fstream` into `.cpdiff/A/` and rebuilt only when the source changes. A failing test is saved there as `fail.in`, `fail.ans` (brute), and `fail.out` (solution).
 
 ```
 WRONG ANSWER on round 6, seed 500621391
