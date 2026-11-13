@@ -10,6 +10,10 @@ with its `precompute_lca` split into named steps.
 | `tests/fcb_test.cpp` | unit test, run with `cpunit fcb` |
 | `notebook/examples/trees/farach-colton_bender/fcb.cpp` | the same code as a full solution |
 
+For contests, a plain sparse table over the whole tour is simpler and still O(1)
+per query, with an O(n log n) build: no blocks, masks or block tables. See
+`contests/codeforces/342d2/E.cpp`, which uses it for Xenia and Tree.
+
 These notes answer the questions that come up when reading the code again.
 
 ---
