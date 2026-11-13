@@ -70,8 +70,8 @@ void solve() {
     int n, k; cin >> n >> k;
     string s; cin >> s;
 
-    // pref[i] = total ways to land on cells 1..i (1-indexed), pref[0] = 0
-    // ways to land on j = pref[j-1] - pref[max(0, j-k-1)], computed once
+    // pref[i] = prefix sum #ways to 1..i
+    // #ways to j = pref[j-1] - pref[max(0, j-k-1)]
     vector<ll> pref(n+1, 0);
     pref[1] = 1;
     FOR(j, 2, n) {
