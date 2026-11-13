@@ -64,8 +64,7 @@ mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
 
 /*
     LCA with Farach-Colton and Bender: O(n) build, O(1) per query
-    follows https://cp-algorithms.com/graph/lca_farachcoltonbender.html
-    why it works: notebook/trees/farach-colton_bender/README.md
+    https://cp-algorithms.com/graph/lca_farachcoltonbender.html
 */
 
 const int MAX_N = 5e5;
@@ -108,23 +107,23 @@ void precompute_log(int m) {
 void precompute_sparse_table(int m) {
     st.assign(block_cnt, vi(log_2[block_cnt] + 1));
 
-    // st[b][0] = min of block b: the first entry starts it, later entries replace it if shallower
+    // st[b][0] = min of block b
     REP(i, m) {
         int b = i / block_size, j = i % block_size;
         if (j == 0) st[b][0] = i;
         else st[b][0] = min_by_h(st[b][0], i);
     }
 
-    // st[b][j] = min of its two halves, blocks [b, b + 2^(j-1)) and [b + 2^(j-1), b + 2^j)
+    // st[b][j] = min of { blocks [b, b + 2^(j-1)), [b + 2^(j-1), b + 2^j) }
     FOR(j, 1, log_2[block_cnt]) {
         REP(b, block_cnt) {
-            if (b + (1 << j) > block_cnt) continue; // run passes the last block, never queried
+            if (b + (1 << j) > block_cnt) continue;
             st[b][j] = min_by_h(st[b][j-1], st[b + (1 << (j-1))][j-1]);
         }
     }
 }
 
-// min over blocks [L, R], two runs of 2^k blocks that may overlap
+// min over blocks [L, R]
 int query_sparse_table(int L, int R) {
     int k = log_2[R - L + 1];
     return min_by_h(st[L][k], st[R - (1 << k) + 1][k]);
@@ -133,29 +132,31 @@ int query_sparse_table(int L, int R) {
 // precompute mask for each block
 void precompute_block_mask(int m) {
     block_mask.assign(block_cnt, 0);
-    REP(i, m) {
+    REP(i, m) { // iterate euler tour
         int b = i / block_size, j = i % block_size;
-        // bit j-1 = 1 if the tour goes one level deeper from offset j-1 to j
+        // turn on bit j-1 if height is increased
         if (j > 0 && height[euler_tour[i]] > height[euler_tour[i - 1]]) block_mask[b] |= 1 << (j - 1);
     }
 }
 
 // precompute RMQ for each unique block
 void precompute_blocks(int m) {
-    int FULL = 1 << (block_size - 1); // number of masks
+    int FULL = 1 << (block_size - 1);
     blocks.assign(FULL, {});
+
     REP(b, block_cnt) {
         int mask = block_mask[b];
-        if (!blocks[mask].empty())
-            continue;
+        
+        if (!blocks[mask].empty()) continue;
         blocks[mask].assign(block_size, vi(block_size));
+        
+        int offset = b * block_size;
         REP(l, block_size) {
             blocks[mask][l][l] = l;
             FOR(r, l + 1, block_size - 1) {
                 blocks[mask][l][r] = blocks[mask][l][r - 1];
-                if (b * block_size + r < m)
-                    blocks[mask][l][r] = min_by_h(b * block_size + blocks[mask][l][r],
-                            b * block_size + r) - b * block_size;
+                if (offset + r >= m) continue;
+                blocks[mask][l][r] = min_by_h(offset + blocks[mask][l][r], offset + r) - offset;
             }
         }
     }
@@ -169,6 +170,7 @@ void precompute_lca(int root) {
     euler_tour.reserve(2 * n);
     flatten(root, -1, 0);
 
+    // decomposition
     int m = sz(euler_tour);
     block_size = max(1, log_2[m] / 2);
     block_cnt = (m + block_size - 1) / block_size;
@@ -179,19 +181,18 @@ void precompute_lca(int root) {
 }
 
 int lca_in_block(int b, int l, int r) {
-    return blocks[block_mask[b]][l][r] + b * block_size;
+    int offset = b * block_size;
+    return offset + blocks[block_mask[b]][l][r];
 }
 
 int lca(int v, int u) {
     int l = first_visit[v];
     int r = first_visit[u];
-    if (l > r)
-        swap(l, r);
+    if (l > r) swap(l, r);
     int bl = l / block_size;
     int br = r / block_size;
     // both ends in one block
-    if (bl == br)
-        return euler_tour[lca_in_block(bl, l % block_size, r % block_size)];
+    if (bl == br) return euler_tour[lca_in_block(bl, l % block_size, r % block_size)];
     // suffix of l's block, prefix of r's block
     int suffix = lca_in_block(bl, l % block_size, block_size - 1);
     int prefix = lca_in_block(br, 0, r % block_size);
