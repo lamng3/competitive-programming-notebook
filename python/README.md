@@ -58,6 +58,8 @@ Every file has tests: `cpunit --list` shows them, and `cpunit <name> --py` runs 
 
 - [strings/rolling_hash/RollingHash.py](strings/rolling_hash/RollingHash.py)
 - [strings/trie/Trie.py](strings/trie/Trie.py), [strings/trie/FileSystem.py](strings/trie/FileSystem.py)
+- [strings/trie/AdaptiveRadixTrie.py](strings/trie/AdaptiveRadixTrie.py), [strings/trie/ART.py](strings/trie/ART.py), [strings/trie/ARTIterator.py](strings/trie/ARTIterator.py): adaptive radix trie, with an iterator that starts from a given word
+- [strings/trie/PersistentTrie.py](strings/trie/PersistentTrie.py), [strings/trie/PersistentART.py](strings/trie/PersistentART.py): persistent versions that copy the changed path and share the rest
 
 ## Databases
 
