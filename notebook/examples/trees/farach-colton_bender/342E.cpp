@@ -85,10 +85,10 @@ int block_size, block_cnt;
 vii st;
 vi block_mask;
 vector<vii> blocks;
-int B = 300;
 
-// changed nodes
-vi changed;
+// query decomposition
+int query_block;
+vi changed; // reds not yet committed
 vi dist;
 
 void preprocess() {
@@ -210,9 +210,10 @@ int lca(int u, int v) {
     return euler[ans];
 }
 
-void rebuild() {
+void commit() {
     queue<int> q;
     for (int u : changed) {
+        if (dist[u] == 0) continue; // already red
         dist[u] = 0;
         q.push(u);
     }
@@ -230,7 +231,7 @@ void rebuild() {
 
 void paint(int v) {
     changed.pb(v);
-    if (sz(changed) >= B) rebuild();
+    if (sz(changed) >= query_block) commit();
 }
 
 int getDist(int u, int v) {
@@ -246,6 +247,7 @@ void getMinDistRed(int v) {
 void solve() {
     // read input
     cin >> n >> m;
+    query_block = max(1, (int)sqrt(n));
     REP(i, n) Adj[i].clear();
     REP(i, n-1) {
         int a, b; cin >> a >> b;
@@ -257,7 +259,7 @@ void solve() {
     precompute_log2();
     precompute_lca();
 
-    dist = height;
+    dist = height; // vertex 1 is the root
 
     REP(i, m) {
         int t, v; cin >> t >> v;

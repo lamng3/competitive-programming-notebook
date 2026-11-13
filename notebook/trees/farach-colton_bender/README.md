@@ -8,6 +8,7 @@ LCA in O(n) build and O(1) per query, following
 | `FCB.h` | the class to include: `FCB fcb(adj, root); fcb.lca(u, v);` |
 | `tests/fcb_test.cpp` | unit test, run with `cpunit fcb` |
 | `notebook/examples/trees/farach-colton_bender/fcb.cpp` | the same code as a full solution |
+| `notebook/examples/trees/farach-colton_bender/342E.cpp` | Codeforces 342E, Xenia and Tree: this LCA, with the paints committed in batches of sqrt(n) |
 
 **In a contest**, use a plain sparse table over the whole Euler tour instead. It
 is O(n log n) to build, still O(1) per query, and has no blocks or masks. See
