@@ -1,8 +1,7 @@
 # Farach-Colton and Bender LCA
 
-LCA in O(n) build and O(1) per query. The code follows
-[cp-algorithms](https://cp-algorithms.com/graph/lca_farachcoltonbender.html) with the same names,
-with its `precompute_lca` split into named steps.
+LCA in O(n) build and O(1) per query, following
+[cp-algorithms](https://cp-algorithms.com/graph/lca_farachcoltonbender.html).
 
 | File | What it is |
 |:--|:--|
@@ -10,218 +9,197 @@ with its `precompute_lca` split into named steps.
 | `tests/fcb_test.cpp` | unit test, run with `cpunit fcb` |
 | `notebook/examples/trees/farach-colton_bender/fcb.cpp` | the same code as a full solution |
 
-For contests, a plain sparse table over the whole tour is simpler and still O(1)
-per query, with an O(n log n) build: no blocks, masks or block tables. See
-`contests/codeforces/342d2/E.cpp`, which uses it for Xenia and Tree.
+**In a contest**, use a plain sparse table over the whole Euler tour instead. It
+is O(n log n) to build, still O(1) per query, and has no blocks or masks. See
+`contests/codeforces/342d2/E.cpp`. Part 1 below proves that version too.
 
-These notes answer the questions that come up when reading the code again.
+The algorithm has two parts:
+
+1. **LCA to RMQ.** The LCA of `u` and `v` is the shallowest vertex between them
+   in the Euler tour.
+2. **±1 RMQ.** Neighbouring heights in the tour differ by exactly 1, so the
+   range minimum can be answered in O(1) after O(n) work.
 
 ---
 
-## The idea in one paragraph
+## Part 1: LCA is the shallowest vertex between u and v in the tour
 
-Walk the tree as an Euler tour and write down every vertex we pass, including
-each time we come back up to it. Between a visit of `u` and a visit of `v`, the
-shallowest vertex is `lca(u, v)`. So LCA becomes a range-minimum query (RMQ) by
-height over the tour. Neighbouring heights in the tour differ by exactly 1, and
-that is what lets the RMQ answer in O(1) after O(n) work.
+**Notation.** `T[0..m-1]` is the tour (`euler_tour`), `h(x)` is the depth of
+`x` (`height`), `sub(x)` is the subtree of `x`, and `first(x)` and `last(x)`
+are the first and last indices where `x` appears in `T`.
+
+`flatten(v)` writes `v`, then for each child `c` calls `flatten(c)` and writes
+`v` again.
+
+On this tree, rooted at 1, with children 2, 3 under 1, children 4, 5 under 2,
+and children 6, 7 under 3:
 
 ```
-lca(u, v) = shallowest vertex in euler_tour[first_visit[u] .. first_visit[v]]
+index  0 1 2 3 4 5 6 7 8 9 10 11 12
+T      1 2 4 2 5 2 1 3 6 3 7  3  1
+h      0 1 2 1 2 1 0 1 2 1 2  1  0
 ```
+
+### Lemma 1: shape of the tour
+
+`m = 2n - 1`, and neighbouring entries are always a vertex and its parent, so
+`|h(T[i+1]) - h(T[i])| = 1`.
+
+*Proof.* Each vertex is written once on entry, and its parent is written once
+more when it returns, which is once per edge: `n + (n - 1)` entries. A write
+after `v` is either a child of `v` being entered (+1), or `v`'s parent being
+written after `flatten(v)` returns (−1). ∎
+
+### Lemma 2: a subtree is one contiguous block of the tour
+
+`T[first(x) .. last(x)]` contains exactly the entries of the vertices in
+`sub(x)`. Every entry in it has height at least `h(x)`, and only `x` itself
+has height exactly `h(x)`.
+
+*Proof.* `flatten(x)` makes its first write at `first(x)` and its last write at
+`last(x)`. Everything written in between comes from calls on descendants of
+`x`, and every call on a descendant runs in between. Descendants other than `x`
+are deeper than `x`. ∎
+
+### Theorem: the shallowest entry between u and v is lca(u, v)
+
+Let `w = lca(u, v)`, and take any index `i` of `u` and any index `j` of `v`,
+with `i <= j`. Then `w` appears in `T[i..j]`, and every other entry in
+`T[i..j]` is deeper than `w`.
+
+*Proof.* Since `u` and `v` are in `sub(w)`, Lemma 2 puts `i` and `j` inside
+`[first(w), last(w)]`, so all of `T[i..j]` lies in `sub(w)`. Every entry has
+height at least `h(w)`, and only `w` has height exactly `h(w)`. It remains to
+show that `w` appears in `T[i..j]`.
+
+- If `u = w` or `v = w`, then `T[i]` or `T[j]` is `w`.
+- Otherwise `u` and `v` lie under two different children `c1` and `c2` of `w`.
+  If they were under the same child, that child would be a deeper common
+  ancestor. By Lemma 2, `c1`'s block holds `i` and `c2`'s block holds `j`.
+  The blocks are disjoint and `i <= j`, so `c1`'s block comes first. Right
+  after `flatten(c1)` returns, `flatten(w)` writes `w` at index `last(c1) + 1`,
+  and that index is outside `c2`'s block. So
+  `i <= last(c1) < last(c1) + 1 < first(c2) <= j`. ∎
+
+Example: `lca(4, 6)` scans `T[2..8] = 4 2 5 2 1 3 6`. The heights are
+`2 1 2 1 0 1 2`, so the shallowest entry is vertex 1.
+
+### What follows from the theorem
+
+- **One index per vertex is enough.** The theorem holds for any occurrence of
+  `u` and of `v`, so the code stores only `first_visit`. There is no "last
+  visit" array, and it doesn't matter whether `u` or `v` is finished at that
+  index. For example, `lca(2, 6)` gives 1 starting from 2's first index (1)
+  and from its last index (5).
+- **Ties are harmless.** Only `w` reaches the minimum height in `T[i..j]`, so
+  `min_by_h` can break ties either way.
+- **The range is a walk from u to v, not a subtree.** `T[2..8]` above is part of
+  2's subtree, then 1, then part of 3's subtree. Subtree ranges are a different
+  flattening, `S` and `E` in `notebook/trees/euler_tour/EulerTour.h`, which
+  writes each vertex once.
+- **`v` must be written again after each child.** Without that write, the `w`
+  between `c1` and `c2` in the proof doesn't exist. The tour becomes
+  `1 2 4 5 3 6 7`, and `lca(4, 6)` scans `4 5 3 6` and answers 3 instead of 1.
+  Lemma 1's ±1 steps also break.
+
+So `lca(u, v) = T[argmin over [first(u), first(v)] of h]`, a range-minimum
+query (RMQ) on `A[i] = h(T[i])`.
+
+---
+
+## Part 2: ±1 RMQ in O(m) build and O(1) query
+
+Cut `A` into blocks of `b = max(1, floor(log2 m) / 2)` entries (`block_size`).
+There are `c = ceil(m / b)` blocks (`block_cnt`). For a query `[l, r]`, let
+`bl = l / b` and `br = r / b`.
+
+- If `bl == br`, it's one in-block query.
+- Otherwise `[l, r]` splits into three disjoint parts: the suffix of block `bl`,
+  the whole blocks `bl+1 .. br-1` (possibly none), and the prefix of block
+  `br`. The minimum of `[l, r]` is the smallest of the three parts' minimums.
+
+The whole blocks use a sparse table, and the suffix and prefix use per-shape
+tables.
+
+### Lemma 3: sparse table over blocks
+
+`st[x][0]` is the position of the minimum of block `x`.
+`st[x][k] = min(st[x][k-1], st[x + 2^(k-1)][k-1])` covers blocks
+`[x, x + 2^k)`. For blocks `[L, R]`, `query_sparse_table` takes
+`k = floor(log2(R - L + 1))`.
+
+*Proof.* `2^k <= R - L + 1 < 2^(k+1)`, so the runs `[L, L + 2^k)` and
+`(R - 2^k, R]` both lie inside `[L, R]` and together cover it. They may
+overlap, which is fine for min because `min(x, x) = x`. A query only reads
+`st[x][k]` with `x + 2^k <= c`, so the build skips runs past the last block.
+
+*Cost.* `c · log c <= (m / b) · log m ≈ 2m`, so O(m). ∎
+
+### Lemma 4: blocks with the same mask share their answers
+
+For a block starting at `s`, let `step_j = A[s+j] - A[s+j-1]` for
+`j = 1 .. b-1`; each step is +1 or −1 by Lemma 1. Bit `j-1` of `block_mask` is
+1 exactly when `step_j = +1`, meaning the tour goes one level deeper:
+
+```cpp
+if (j > 0 && height[euler_tour[i]] > height[euler_tour[i - 1]]) block_mask[b] |= 1 << (j - 1);
+```
+
+*Claim.* Two blocks with the same mask have the minimum of every `[l, r]` at the
+same offset.
+
+*Proof.* `A[s + j] = A[s] + step_1 + ... + step_j`, so a block's heights are
+determined by its mask, up to the constant `A[s]`. Adding a constant to every
+entry doesn't move the minimum. ∎
+
+So `precompute_blocks` fills `blocks[mask][l][r]` once per mask, from the first
+block that has it, and skips the rest. `lca_in_block(x, l, r)` reads
+`blocks[block_mask[x]][l][r]` and adds `x · b` to turn the offset back into a
+tour index.
+
+Example with `b = 4`: heights `2 3 2 1` give steps `+ - -`, so mask `0b001`.
+Heights `7 8 7 6` give the same mask, and both have their minimum at offset 3.
+
+*The short last block.* If `b` doesn't divide `m`, the last block's missing
+steps stay 0. Blocks are processed in order, so a table built from the last
+block is only ever used by the last block, and the guard
+`b * block_size + r < m` keeps it inside the tour. If an earlier full block has
+the same mask, the two agree on every step the last block really has. Queries
+never ask past `m - 1`.
+
+### Lemma 5: total cost
+
+There are at most `2^(b-1) <= 2^(log2(m)/2 - 1) = sqrt(m) / 2` masks, each with
+a `b × b` table, for `O(sqrt(m) · log² m)`, which is much smaller than `m`.
+Computing the masks is O(m), the sparse table is O(m) by Lemma 3, and the tour
+is O(n). So the build is O(n). A query uses at most four table lookups, so
+it's O(1). ∎
+
+For `n = 5 · 10^5`: `m = 999,999`, `b = 9`, `c = 111,111` blocks, 17 sparse
+table levels, and at most 256 masks with 81 entries each.
+
+---
 
 ## Code map
 
-| Function | What it does |
+| Function | Role |
 |:--|:--|
-| `flatten(v, p, h)` | writes `v`, recurses into each child, writes `v` again after each one |
-| `min_by_h(i, j)` | of two `euler_tour` indices, the one whose vertex is shallower |
-| `precompute_log(m)` | `log_2[x] = log_2[x/2] + 1`, with `log_2[0] = -1`; `fcb.cpp` builds it once in `preprocess` up to `2 * MAX_N` |
-| `precompute_sparse_table(m)` | `st[b][0]` = min of block `b`; `st[b][j]` combines two runs of `2^(j-1)` blocks, skipping runs that pass the last block |
-| `query_sparse_table(L, R)` | min over blocks `[L, R]` from two runs of `2^k` blocks, `k = log_2[R - L + 1]` |
-| `precompute_block_mask(m)` | one bit per step inside each block, 1 = height + 1 |
-| `precompute_blocks(m)` | for each mask, the min of every `[l, r]` inside a block of that shape |
-| `precompute_lca(root)` | runs the tour, picks the block size, then the three steps above (`FCB.h` also builds `log_2` here) |
-| `lca_in_block(b, l, r)` | `blocks[block_mask[b]][l][r]` turned back into a tour index |
-| `lca(v, u)` | one block, or the suffix of `l`'s block + whole blocks in between + the prefix of `r`'s block |
-
-`min_by_h` compares heights straight from the tour, so there is no separate
-array of heights to keep in sync.
-
-## The tour on a small tree
-
-```
-        1
-      /   \
-     2     3
-    / \   / \
-   4   5 6   7
-```
-
-```
-index       0 1 2 3 4 5 6 7 8 9 10 11 12
-euler_tour  1 2 4 2 5 2 1 3 6 3 7  3  1
-height      0 1 2 1 2 1 0 1 2 1 2  1  0
-```
-
-```
-flatten(v):
-    write v
-    for each child u:
-        flatten(u)
-        write v          <- back up through v
-```
-
-The tour has `2n - 1` entries: `n` entries on entry, plus one for each of the
-`n - 1` edges on the way back up.
-
-## Why the minimum in the range is the LCA
-
-Take `lca(4, 6)`. The range is `euler_tour[2..8]`:
-
-```
-euler_tour  4 2 5 2 1 3 6
-height      2 1 2 1 0 1 2       min height 0 at vertex 1 = lca(4, 6)
-```
-
-Two facts make this work for any `u`, `v`:
-
-1. **The walk never goes above the LCA.** Both `u` and `v` are inside the
-   LCA's subtree. The tour stays inside that subtree from when it enters the
-   LCA until it leaves it, so nothing shallower appears in the range.
-2. **The walk passes through the LCA.** To get from `u`'s branch to `v`'s
-   branch, the tour has to come back up to the LCA. If `u` is the LCA itself
-   (`u` is an ancestor of `v`), then `u` is at the end of the range.
-
-Ties are harmless: inside the LCA's subtree, the LCA is the only vertex at its
-height, so every index holding the minimum height holds the LCA.
-
-## Why we write `v` again after each child
-
-Without `euler_tour.push_back(v)` after each child, each vertex is written once:
-
-```
-euler_tour  1 2 4 5 3 6 7
-height      0 1 2 2 1 2 2
-```
-
-`lca(4, 6)` would look at `4 5 3 6` and answer 3, but the LCA is 1. Vertex 1
-was only written at the start, so it never appears between 4 and 6. Fact 2
-above fails.
-
-It also breaks the +-1 steps. Without the re-writes the tour can jump from a
-deep leaf straight to the next branch, several levels up in one step, and the
-block masks only describe steps of +1 or -1.
-
-## Why only `first_visit`, and no last visit
-
-`first_visit[v]` is where `v` first appears in the tour. There is no last visit
-array, because a query needs just one index per vertex, and any visit of `u`
-with any visit of `v` gives the same answer. Facts 1 and 2 hold for every visit:
-each visit of `u` lies inside the LCA's part of the tour, and going from `u` to
-`v` still passes through the LCA.
-
-So the query doesn't care whether `u` or `v` is finished when it is visited.
-The first visit is just a single, convenient index to keep, filled in when the
-tour enters `v`.
-
-`lca(2, 6)` gives the same answer from the first visit of 2 and from its last:
-
-```
-first visit of 2 (index 1) .. first visit of 6 (index 8)
-euler_tour  2 4 2 5 2 1 3 6
-height      1 2 1 2 1 0 1 2     -> 1
-
-last visit of 2 (index 5) .. first visit of 6 (index 8)
-euler_tour  2 1 3 6
-height      1 0 1 2             -> 1
-```
-
-## The range is not a subtree
-
-`euler_tour[2..8]` above is part of 2's subtree, then vertex 1, then part of
-3's subtree. It is a walk from `u` to `v` through the LCA, not a subtree. The
-sparse table and the blocks are cuts of the tour by index. They never line up
-with subtrees.
-
-The other tree flattening in this notebook, `notebook/trees/euler_tour/EulerTour.h`,
-is for a different job:
-
-| | `EulerTour.h` (`S`, `E`) | FCB tour (`first_visit`) |
-|:--|:--|:--|
-| each vertex is written | once | on entry and after each child |
-| length | `n` | `2n - 1` |
-| a contiguous range is | a whole subtree, `[S[u], E[u])` | a walk between two vertices |
-| used for | subtree queries: sum over u's subtree | LCA as a range minimum |
-| needs an end index | yes, `E[u]` closes the subtree | no, any one visit works |
-
-## The RMQ in three parts
-
-Cut the tour into blocks of `block_size = log2(m) / 2` entries. A query
-`[l, r]` splits into three parts:
-
-```
-l ... ] [ block ] [ block ] ... [ block ] [ ... r
-suffix of     whole blocks in between      prefix of
-l's block                                  r's block
-```
-
-- **Whole blocks**: `st[b][k]` is the min of blocks `[b, b + 2^k)`. There are
-  `m / block_size` blocks with `log(m)` levels each, so O(m) in total. A query
-  takes two runs of `2^k` blocks that may overlap, and that is fine for min,
-  because `min(x, x) = x`.
-- **Inside a block**: a block is `block_size - 1` steps of +1 or -1, so its
-  shape is a bitmask. The height at offset `r` is the height at offset 0 plus
-  the steps before `r`, so two blocks with the same mask differ only by a
-  constant and have their minimums in the same places. `blocks[mask]` is built
-  once per mask, from the first block with that mask: at most
-  `2^(block_size - 1) <= sqrt(m)` masks with `block_size^2` entries each.
-
-### Block masks on the small tree
-
-With `block_size = 3` (the real code picks 1 for 13 entries; 3 shows it better):
-
-```
-blocks   [0 1 2] [1 2 1] [0 1 2] [1 2 1] [0]
-steps     + +     + -     + +     + -
-mask      0b11    0b01    0b11    0b01    0
-```
-
-Bit `j-1` is the step from offset `j-1` to `j`: 1 when the height goes up by 1
-(one level deeper), 0 when it goes down. Blocks 1 and 3 have the same mask, so
-they share one table. The short last block skips offsets past the end of the
-tour, and no query reaches them.
-
-`blocks[0b01]`, built from block 1 (heights `1 2 1`):
-
-```
-       r=0  r=1  r=2
-l=0     0    0    2      tie between offsets 0 and 2: min_by_h keeps the right one
-l=1          1    2
-l=2               2
-```
-
-On a tie both offsets hold the same vertex, so either answer is correct.
-
-## Sizes at n = 5 * 10^5
-
-| | value |
-|:--|:--|
-| tour length `m` | 999,999 |
-| `block_size` | `log_2[m] / 2 = 19 / 2 = 9` |
-| `block_cnt` | 111,111 |
-| sparse table levels | `log_2[111111] + 1 = 17` |
-| masks | at most `2^8 = 256`, 81 entries each |
+| `flatten(v, p, h)` | the Euler tour: fills `euler_tour`, `first_visit`, `height` (Part 1) |
+| `min_by_h(i, j)` | the tour index whose vertex is shallower |
+| `precompute_log(m)` | `log_2[x] = floor(log2 x)`; `fcb.cpp` builds it once in `preprocess` |
+| `precompute_sparse_table(m)` | block minimums and the sparse table over blocks (Lemma 3) |
+| `query_sparse_table(L, R)` | minimum over whole blocks `[L, R]` (Lemma 3) |
+| `precompute_block_mask(m)` | one bit per step inside each block (Lemma 4) |
+| `precompute_blocks(m)` | in-block minimums, once per mask (Lemma 4) |
+| `precompute_lca(root)` | tour, block size, then the three steps above |
+| `lca_in_block(b, l, r)` | in-block minimum as a tour index |
+| `lca(v, u)` | one block, or suffix + whole blocks + prefix |
 
 ## Pitfalls
 
-- **Edges are undirected.** Store `a - b` both ways, or the tour misses
-  children listed second.
-- **`log_2` must cover the tour, not `n`.** The tour has `2n - 1` entries.
-- **Reset between test cases.** cp-algorithms builds `log_2` with `push_back`
-  and `blocks` with `resize`, which keep old data on a second call. This code
-  uses `assign` and `clear`.
-- **Recursion depth.** A path of 5 * 10^5 vertices recurses that deep. That is
-  fine on Codeforces; locally run `ulimit -s 65520` first.
-- **`cin` on a Mac is slow.** Reading 2 * 10^6 numbers takes about 1.9s locally
-  but about 0.15s on a Linux judge. The algorithm itself takes about 0.2s.
+- **Edges are undirected.** Store both directions.
+- **`log_2` must cover the tour (`2n - 1` entries), not just `n`.**
+- **Reset between test cases.** Use `assign` and `clear`. cp-algorithms'
+  `push_back` and `resize` keep old data on a second call.
+- **Recursion depth.** A path of 5 · 10^5 vertices recurses that deep. That's
+  fine on Codeforces; locally, run `ulimit -s 65520` first.
