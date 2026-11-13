@@ -136,7 +136,7 @@ void precompute_block_mask(int m) {
     REP(i, m) {
         int b = i / block_size, j = i % block_size;
         // bit j-1 = 1 if the tour goes one level deeper from offset j-1 to j
-        if (j > 0 && min_by_h(i - 1, i) == i - 1) block_mask[b] += 1 << (j - 1);
+        if (j > 0 && height[euler_tour[i]] > height[euler_tour[i - 1]]) block_mask[b] |= 1 << (j - 1);
     }
 }
 
