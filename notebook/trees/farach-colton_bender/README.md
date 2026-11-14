@@ -6,13 +6,16 @@ LCA in O(n) build and O(1) per query, following
 | File | What it is |
 |:--|:--|
 | `FCB.h` | the class to include: `FCB fcb(adj, root); fcb.lca(u, v);` |
-| `tests/fcb_test.cpp` | unit test, run with `cpunit fcb` |
-| `notebook/examples/trees/farach-colton_bender/fcb.cpp` | the same code as a full solution |
+| `FCB_simple.h` | the short version, same interface: `FCBSimple t(adj, root); t.lca(u, v);` (Part 3) |
+| `tests/fcb_test.cpp` | unit test for both classes, run with `cpunit fcb` |
+| `notebook/examples/trees/farach-colton_bender/fcb.cpp` | `FCB.h` as a full solution |
+| `notebook/examples/trees/farach-colton_bender/fcb_simple.cpp` | `FCB_simple.h` as a full solution |
 | `notebook/examples/trees/farach-colton_bender/342E.cpp` | Codeforces 342E, Xenia and Tree: this LCA, with the paints committed in batches of sqrt(n) |
 
-**In a contest**, use a plain sparse table over the whole Euler tour instead. It
-is O(n log n) to build, still O(1) per query, and has no blocks or masks. See
-`contests/codeforces/342d2/E.cpp`. Part 1 below proves that version too.
+**In a contest**, use `FCB_simple.h`: the same Euler tour, with one plain
+sparse table over it. It is O(n log n) to build, still O(1) per query, and has
+no blocks or masks. Part 3 explains it. `contests/codeforces/342d2/E.cpp` is
+the same idea written into a solution.
 
 The algorithm has two parts:
 
@@ -181,7 +184,52 @@ table levels, and at most 256 masks with 81 entries each.
 
 ---
 
-## Code map
+## Part 3: the short version, `FCB_simple.h`
+
+`FCB_simple.h` keeps Part 1 exactly: the same `flatten`, `first_visit`,
+`height`, `min_by_h`, and `log_2`. It drops Part 2 and puts one sparse table
+over all `m = 2n - 1` tour entries:
+
+- `st[0][i] = i`.
+- `st[k][i] = min_by_h(st[k-1][i], st[k-1][i + 2^(k-1)])` covers `[i, i + 2^k)`.
+- `lca(u, v)` takes `[l, r] = [first(u), first(v)]`, swapped if needed, and
+  `k = floor(log2(r - l + 1))`, and returns
+  `T[min_by_h(st[k][l], st[k][r - 2^k + 1])]`.
+
+*Why it's right.* By the theorem in Part 1, the answer is the shallowest entry
+of `T[l..r]`. Lemma 3's argument, with entries in place of blocks, shows that
+the two runs of `2^k` entries lie inside `[l, r]` and cover it. Overlap is fine
+for min, and ties are harmless (Part 1).
+
+*Cost.* Level `k` has `m - 2^k + 1` cells, and there are `floor(log2 m) + 1`
+levels, so the build is O(m log m) = O(n log n). A query is two lookups.
+
+### What Part 2 buys
+
+| | `FCB_simple.h` | `FCB.h` |
+|:--|:--|:--|
+| RMQ | one sparse table over the tour | sparse table over blocks, plus a table per block mask |
+| build | O(n log n) | O(n) |
+| query | 2 lookups | up to 4 lookups |
+| tables for `n = 5 · 10^5` | 20 levels over 999,999 entries, about 19 · 10^6 ints | 17 levels over 111,111 blocks, plus at most 256 masks × 81 |
+
+Measured locally on three trees with `n = q = 5 · 10^5` (random, deep, and a
+path), `fcb.cpp` and `fcb_simple.cpp` gave the same answers in about the same
+time, around 2.4 s each, nearly all of it reading input. Peak memory was
+45–88 MB for `fcb.cpp` and 106–149 MB for `fcb_simple.cpp`.
+
+### A variant without the tour
+
+Number the vertices once, in DFS preorder. For `u != v` with
+`tin(u) < tin(v)`, every vertex at positions `(tin(u), tin(v)]` is strictly
+below `lca(u, v)`, and one of them is its child, so the LCA is the parent with
+the smallest `tin` over that range. That makes the table `n` entries long
+instead of `2n - 1`, but it needs parents and a range that starts at
+`tin(u) + 1`. This notebook keeps the tour because it's easier to follow.
+
+---
+
+## Code map (`FCB.h`)
 
 | Function | Role |
 |:--|:--|
@@ -202,5 +250,5 @@ table levels, and at most 256 masks with 81 entries each.
 - **`log_2` must cover the tour (`2n - 1` entries), not just `n`.**
 - **Reset between test cases.** Use `assign` and `clear`. cp-algorithms'
   `push_back` and `resize` keep old data on a second call.
-- **Recursion depth.** A path of 5 · 10^5 vertices recurses that deep. That's
-  fine on Codeforces; locally, run `ulimit -s 65520` first.
+- **Recursion depth.** In both classes, a path of 5 · 10^5 vertices recurses
+  that deep. That's fine on Codeforces; locally, run `ulimit -s 65520` first.

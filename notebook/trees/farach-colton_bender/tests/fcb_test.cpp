@@ -1,12 +1,15 @@
 // Build & run from tests/:
 //   g++ -std=c++17 -fsanitize=address,undefined -Wall fcb_test.cpp -o /tmp/fcbtest && /tmp/fcbtest
+// runs every check on FCB (FCB.h) and FCBSimple (FCB_simple.h)
 #include "../FCB.h"
+#include "../FCB_simple.h"
 
 static int checks = 0, fails = 0;
+static const char* who = "";
 #define CHECK(cond) do {                                              \
     ++checks;                                                         \
     if (!(cond)) { ++fails;                                           \
-        printf("FAIL line %d: %s\n", __LINE__, #cond); }              \
+        printf("FAIL %s line %d: %s\n", who, __LINE__, #cond); }      \
 } while (0)
 
 // lca by climbing parents
@@ -17,21 +20,25 @@ int bruteLca(int u, int v, const vector<int>& par, const vector<int>& dep) {
     return u;
 }
 
-int main() {
+template <class L>
+void run(const char* name) {
+    who = name;
+
     // 1) the complete binary tree from the problem statement, 0-indexed
     vector<vector<int>> g(7);
     vector<pair<int, int>> edges = {{0, 1}, {0, 2}, {1, 3}, {1, 4}, {2, 5}, {2, 6}};
     for (auto [a, b] : edges) g[a].push_back(b), g[b].push_back(a);
-    FCB fcb(g, 0);
-    CHECK(fcb.lca(3, 4) == 1);
-    CHECK(fcb.lca(3, 5) == 0);
-    CHECK(fcb.lca(1, 3) == 1);
-    CHECK(fcb.lca(5, 6) == 2);
-    CHECK(fcb.lca(2, 0) == 0);
-    CHECK(fcb.dist(3, 6) == 4);
+    L t(g, 0);
+    CHECK(t.lca(3, 4) == 1);
+    CHECK(t.lca(3, 5) == 0);
+    CHECK(t.lca(1, 3) == 1);
+    CHECK(t.lca(5, 6) == 2);
+    CHECK(t.lca(2, 0) == 0);
+    CHECK(t.dist(3, 6) == 4);
+    CHECK(t.depth(6) == 2);
 
     // 2) a single vertex
-    FCB one(vector<vector<int>>(1), 0);
+    L one(vector<vector<int>>(1), 0);
     CHECK(one.lca(0, 0) == 0);
 
     // 3) random trees (paths, bushy, random) and random roots against parent climbing
@@ -49,12 +56,18 @@ int main() {
             int u = order[k];
             for (int v : adj[u]) if (v != par[u]) par[v] = u, dep[v] = dep[u] + 1, order.push_back(v);
         }
-        FCB f(adj, root);
+        L f(adj, root);
         for (int q = 0; q < 200; q++) {
             int u = rng() % n, v = rng() % n;
             CHECK(f.lca(u, v) == bruteLca(u, v, par, dep));
+            CHECK(f.dist(u, v) == dep[u] + dep[v] - 2 * dep[bruteLca(u, v, par, dep)]);
         }
     }
+}
+
+int main() {
+    run<FCB>("FCB");
+    run<FCBSimple>("FCBSimple");
 
     printf("\n%d checks, %d failed.\n", checks, fails);
     return fails ? 1 : 0;
