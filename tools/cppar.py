@@ -34,7 +34,7 @@ CHECK_SIZES = [0, 1, 2, 3, 4, 5, 7, 8, 9, 16, 17, 100, 1000, 1023, 1024, 4097, 6
 
 FLAGS = {
     "run": ["-O3", "-DNDEBUG"],
-    "check": ["-O1", "-g", "-fno-omit-frame-pointer", "-fsanitize=address,undefined"],
+    "check": ["-O1", "-g", "-fno-omit-frame-pointer", "-fsanitize=address,undefined", "-fno-sanitize-recover=undefined"],
     "tsan": ["-O1", "-g", "-fsanitize=thread"],
 }
 
@@ -237,7 +237,8 @@ def check(path, exe):
     first_problem, names = {}, []
     for k, n in enumerate(CHECK_SIZES):
         progress(f"Checking n = {n:,} ({k + 1} of {len(CHECK_SIZES)}) ...")
-        env = dict(os.environ, PARBENCH_OUT="1", PARBENCH_CHECK="1", PARBENCH_N=str(n))
+        env = dict(os.environ, PARBENCH_OUT="1", PARBENCH_CHECK="1", PARBENCH_N=str(n),
+                   UBSAN_OPTIONS="print_stacktrace=1")  # undefined behavior stops the run and shows where
         proc, results, _, _ = execute(exe, env)
         if crashed(proc, f"at n = {n:,}"):
             return 1
