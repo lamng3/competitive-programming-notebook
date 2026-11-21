@@ -214,7 +214,7 @@ saved to .cpdiff/A/fail.in, fail.ans, fail.out; replay with --seed 500621391 -n 
 <details>
 <summary><b><code>cppar &lt;name&gt; [--check] [--lg L] [--threads P ...]</code>: check and time parallel algorithms</b></summary>
 
-Builds `notebook/parallel/<name>/bench.cpp`, which registers a sequential reference and parallel versions with `tools/parbench.h`, and prints how each version does on 1, 2, 4, ... threads: the median time per run and the speedup over the sequential one. `--check` instead checks every version on sizes from 0 to 2^20, built with sanitizers. Given a `.cpp` file instead of a name, it builds that file with ParlayLib and runs it, which is the way to try things out. The first run fetches [ParlayLib](https://github.com/cmuparlay/parlaylib) into `third_party/`.
+Checks and times the parallel versions in `notebook/parallel/<name>/` against a sequential one, on 1, 2, 4, ... threads, and prints the results as tables. Given a `.cpp` file, it builds it with [ParlayLib](https://github.com/cmuparlay/parlaylib) and runs it. See [`notebook/parallel/`](notebook/parallel/README.md).
 
 ```
 cppar --list                    # the problems in notebook/parallel/

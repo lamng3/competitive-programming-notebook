@@ -78,6 +78,33 @@ inline std::string with_commas(size_t n) {
     return s;
 }
 
+// Prints a Markdown table: the first column left-aligned, the others
+// right-aligned when they hold numbers.
+inline void table(const std::vector<std::string>& head, const std::vector<std::vector<std::string>>& rows,
+                  bool numbers = true) {
+    std::vector<size_t> w(head.size());
+    for (size_t j = 0; j < head.size(); j++) w[j] = std::max<size_t>(head[j].size(), 3);
+    for (auto& r : rows)
+        for (size_t j = 0; j < r.size() && j < w.size(); j++) w[j] = std::max(w[j], r[j].size());
+    auto right = [&](size_t j) { return numbers && j > 0; };
+    auto line = [&](const std::vector<std::string>& r) {
+        printf("|");
+        for (size_t j = 0; j < head.size(); j++) {
+            const char* c = j < r.size() ? r[j].c_str() : "";
+            printf(right(j) ? " %*s |" : " %-*s |", int(w[j]), c);
+        }
+        printf("\n");
+    };
+    line(head);
+    printf("|");
+    for (size_t j = 0; j < head.size(); j++) {
+        std::string dashes(w[j] + 1, '-');
+        printf(right(j) ? "%s:|" : ":%s|", dashes.c_str());
+    }
+    printf("\n");
+    for (auto& r : rows) line(r);
+}
+
 inline std::string ms_text(double ms) {
     char b[32];
     snprintf(b, sizeof b, ms < 1 ? "%.3f ms" : ms < 10 ? "%.2f ms" : ms < 100 ? "%.1f ms" : "%.0f ms", ms);
@@ -264,9 +291,8 @@ class Bench {
         printf("%s: checking %zu parallel version%s against %s, on %zu sizes with 3 inputs each, on %zu threads\n\n",
                name_.c_str(), versions_.size(), versions_.size() == 1 ? "" : "s", reference_.name.c_str(),
                check_sizes_.size(), max_threads_);
-        size_t width = 0;
-        for (auto& v : versions_) width = std::max(width, v.name.size());
         int bad = 0;
+        std::vector<std::vector<std::string>> rows;
         for (auto& v : versions_) {
             std::string result;
             parlay::execute_with_scheduler(unsigned(max_threads_), [&] {
@@ -276,14 +302,15 @@ class Bench {
                         Output want = reference_.prepare(in)();
                         std::string r = attempt(v, in, want);
                         if (r == "not written yet") result = r;
-                        else if (!r.empty()) result = "FAIL  n = " + std::to_string(n) + ", input " + std::to_string(seed) + ": " + r;
+                        else if (!r.empty()) result = "FAIL at n = " + std::to_string(n) + ", input " + std::to_string(seed) + ": " + r;
                     }
                     if (!result.empty()) break;
                 }
             });
-            printf("  %-*s  %s\n", int(width), v.name.c_str(), result.empty() ? "pass" : result.c_str());
+            rows.push_back({v.name, result.empty() ? "pass" : result});
             if (!result.empty()) bad++;
         }
+        detail::table({"version", "result"}, rows, false);
         return bad ? 1 : 0;
     }
 
@@ -304,21 +331,21 @@ class Bench {
             for (size_t i = 0; i < versions_.size(); i++) status[i] = attempt(versions_[i], in, want);
         });
 
-        std::vector<std::vector<std::string>> cells(versions_.size(), std::vector<std::string>(o.threads.size()));
+        std::vector<std::vector<double>> ms(versions_.size(), std::vector<double>(o.threads.size(), -1));
+        std::vector<std::string> notes;
         for (size_t j = 0; j < o.threads.size(); j++) {
             size_t p = o.threads[j];
             parlay::execute_with_scheduler(unsigned(p), [&] {
                 for (size_t i = 0; i < versions_.size(); i++) {
                     if (!status[i].empty()) continue;
-                    auto [ms, problem] = time(versions_[i], in, want, o.reps);
+                    auto [t, problem] = time(versions_[i], in, want, o.reps);
                     if (o.csv) {
-                        if (problem.empty()) printf("%s,%zu,%zu,%.4f,%.3f\n", versions_[i].name.c_str(), p, n, ms, base / ms);
+                        if (problem.empty()) printf("%s,%zu,%zu,%.4f,%.3f\n", versions_[i].name.c_str(), p, n, t, base / t);
                         else printf("%s,%zu,%zu,%s\n", versions_[i].name.c_str(), p, n, problem.c_str());
                         continue;
                     }
-                    char speed[32];
-                    snprintf(speed, sizeof speed, base / ms < 10 ? "%.2fx" : "%.1fx", base / ms);
-                    cells[i][j] = problem.empty() ? detail::ms_text(ms) + "  " + speed : "wrong: " + problem;
+                    if (problem.empty()) ms[i][j] = t;
+                    else notes.push_back(versions_[i].name + " on " + std::to_string(p) + " threads: " + problem);
                 }
             });
         }
@@ -328,43 +355,53 @@ class Bench {
                 if (!status[i].empty()) printf("%s,,%zu,%s\n", versions_[i].name.c_str(), n, status[i].c_str());
             return 0;
         }
-        print_table(o, n, base, status, cells);
+        print_tables(o, n, base, status, ms, notes);
         return 0;
     }
 
-    void print_table(const Options& o, size_t n, double base, const std::vector<std::string>& status,
-                     const std::vector<std::vector<std::string>>& cells) const {
+    void print_tables(const Options& o, size_t n, double base, const std::vector<std::string>& status,
+                      const std::vector<std::vector<double>>& ms, const std::vector<std::string>& notes) const {
         std::string size = detail::with_commas(n);
         if (n && (n & (n - 1)) == 0) size = "2^" + std::to_string(__builtin_ctzll(n)) + " = " + size;
-        printf("%s · n = %s · median of %d runs, after 2 warm-ups\n\n", name_.c_str(), size.c_str(), o.reps);
+        printf("%s · n = %s · median of %d runs, after 2 warm-ups\n", name_.c_str(), size.c_str(), o.reps);
 
-        std::string label = reference_.name == "sequential" ? reference_.name : reference_.name + " (sequential)";
-        size_t first = label.size();
-        for (auto& v : versions_) first = std::max(first, v.name.size());
-        std::vector<std::string> head;
+        std::vector<std::string> head = {"version"};
         for (size_t p : o.threads) head.push_back(std::to_string(p) + (p == 1 ? " thread" : " threads"));
-        std::vector<size_t> width(o.threads.size());
-        for (size_t j = 0; j < o.threads.size(); j++) {
-            width[j] = head[j].size();
-            for (size_t i = 0; i < versions_.size(); i++)
-                if (status[i].empty()) width[j] = std::max(width[j], cells[i][j].size());
+        auto label = reference_.name == "sequential" ? reference_.name : reference_.name + " (sequential)";
+        auto cell = [](double x, const std::string& text) { return x < 0 ? std::string("wrong") : text; };
+
+        std::vector<std::vector<std::string>> times = {{label, detail::ms_text(base)}}, speedups;
+        for (size_t i = 0; i < versions_.size(); i++) {
+            if (!status[i].empty()) continue;
+            std::vector<std::string> t = {versions_[i].name}, x = {versions_[i].name};
+            for (double m : ms[i]) {
+                char speed[32];
+                snprintf(speed, sizeof speed, base / m < 10 ? "%.2fx" : "%.1fx", base / m);
+                t.push_back(cell(m, detail::ms_text(m)));
+                x.push_back(cell(m, speed));
+            }
+            times.push_back(t);
+            speedups.push_back(x);
+        }
+        printf("\nTime per run\n\n");
+        detail::table(head, times);
+        if (!speedups.empty()) {
+            printf("\nSpeedup over %s (%s): above 1x is faster\n\n", reference_.name.c_str(), detail::ms_text(base).c_str());
+            detail::table(head, speedups);
         }
 
-        printf("  %-*s", int(first), "");
-        for (size_t j = 0; j < head.size(); j++) printf("   %-*s", int(width[j]), head[j].c_str());
-        printf("\n  %-*s   %s\n", int(first), label.c_str(), detail::ms_text(base).c_str());
+        std::vector<std::vector<std::string>> untimed;
         for (size_t i = 0; i < versions_.size(); i++) {
-            printf("  %-*s", int(first), versions_[i].name.c_str());
-            if (!status[i].empty()) {
-                const std::string& s = status[i];
-                bool plain = s == "not written yet" || s.rfind("threw: ", 0) == 0;
-                printf("   %s\n", (plain ? s : "wrong answer: " + s).c_str());
-                continue;
-            }
-            for (size_t j = 0; j < cells[i].size(); j++) printf("   %-*s", int(width[j]), cells[i][j].c_str());
-            printf("\n");
+            if (status[i].empty()) continue;
+            const std::string& s = status[i];
+            bool plain = s == "not written yet" || s.rfind("threw: ", 0) == 0;
+            untimed.push_back({versions_[i].name, plain ? s : "wrong answer: " + s});
         }
-        printf("\nEach cell: time per run, then speedup over %s (%s).\n", reference_.name.c_str(), detail::ms_text(base).c_str());
+        if (!untimed.empty()) {
+            printf("\nNot timed\n\n");
+            detail::table({"version", "why"}, untimed, false);
+        }
+        for (auto& note : notes) printf("\nWrong: %s\n", note.c_str());
     }
 };
 
