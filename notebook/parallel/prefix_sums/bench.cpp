@@ -5,9 +5,9 @@
 // Prints CSV: method, threads, n, median ms, billions of elements per
 // second, and speedup over the sequential loop. A scan that isn't written
 // yet, or gives a wrong answer at this size, is reported and not timed.
-#include "scan_hillis_steele.h"
-#include "scan_blelloch.h"
-#include "scan_blocked.h"
+#include "HillisSteeleScan.h"
+#include "BlellochScan.h"
+#include "BlockedScan.h"
 #include <parlay/primitives.h>
 #include <parlay/sequence.h>
 #ifdef __APPLE__

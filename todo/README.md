@@ -6,7 +6,7 @@ The sections and the subfolders inside them are numbered in study order: each on
 
 To study a topic: read a write-up of the idea, fill in the stub in the notebook's style, add a test next to it (`cpunit <name>`), then move it into `notebook/` and tick it here.
 
-9 of 459 have a C++ version in the notebook.
+9 of 456 have a C++ version in the notebook.
 
 ## Sections
 
@@ -28,7 +28,6 @@ To study a topic: read a write-up of the idea, fill in the stub in the notebook'
 16. [Random Generators](#16-random-generators) (11): Random trees, graphs, and polygons, for stress-testing everything above.
 17. [Miscellaneous](#17-miscellaneous) (20): Fast IO, big integers, bit tricks, and other utilities.
 18. [Network Communication](#18-network-communication) (1): Communication problems, where two programs talk through a limited channel.
-19. [Parallel Algorithms](#19-parallel-algorithms) (3): Prefix sums three ways with ParlayLib, checked by `cpunit todo_parallel` and timed on 1 to 12 threads by `bench.py`.
 
 ## 1. Numeric
 
@@ -887,11 +886,3 @@ Fast IO, big integers, bit tricks, and other utilities.
 Communication problems, where two programs talk through a limited channel.
 
 - [ ] [Network communication manager](18_network_communication/network_communication_manager.h)
-
-## 19. Parallel Algorithms
-
-Prefix sums three ways with ParlayLib, the first exercises from [CMSC 858N](https://www.cs.umd.edu/~laxman/paralg-f26.html). The stubs start empty; [the section's README](19_parallel_algorithms/README.md) has the setup, the benchmark, and the exercises.
-
-- [ ] [Scan, Hillis and Steele](19_parallel_algorithms/scan_hillis_steele.h)
-- [ ] [Scan, Blelloch](19_parallel_algorithms/scan_blelloch.h)
-- [ ] [Scan, blocked](19_parallel_algorithms/scan_blocked.h)

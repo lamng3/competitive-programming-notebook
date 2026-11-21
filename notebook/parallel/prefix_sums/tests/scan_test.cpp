@@ -1,9 +1,9 @@
-// Build & run from tests/, once ParlayLib is in third_party/ (see ../README.md):
-//   g++ -std=c++17 -fsanitize=address,undefined -Wall -I../../../third_party/parlaylib/include todo_parallel_test.cpp -o /tmp/t && /tmp/t
+// Build & run from tests/, once ParlayLib is in third_party/ (see notebook/parallel/README.md):
+//   g++ -std=c++17 -fsanitize=address,undefined -Wall -I../../../../third_party/parlaylib/include scan_test.cpp -o /tmp/t && /tmp/t
 // For data races, build with -fsanitize=thread instead.
-#include "../scan_hillis_steele.h"
-#include "../scan_blelloch.h"
-#include "../scan_blocked.h"
+#include "../HillisSteeleScan.h"
+#include "../BlellochScan.h"
+#include "../BlockedScan.h"
 
 using ll = long long;
 const ll UNTOUCHED = LLONG_MIN + 7;

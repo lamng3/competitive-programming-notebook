@@ -2,9 +2,9 @@
 """Time the scans in this folder on several thread counts.
 
 Usage, from anywhere:
-    python3 todo/19_parallel_algorithms/bench.py                    n = 2^26, on 1, 2, 4, 8, 12 threads
-    python3 todo/19_parallel_algorithms/bench.py --lg 22 --threads 1 8
-    python3 todo/19_parallel_algorithms/bench.py --setup            only fetch ParlayLib
+    python3 notebook/parallel/prefix_sums/bench.py                    n = 2^26, on 1, 2, 4, 8, 12 threads
+    python3 notebook/parallel/prefix_sums/bench.py --lg 22 --threads 1 8
+    python3 notebook/parallel/prefix_sums/bench.py --setup            only fetch ParlayLib
 
 Clones ParlayLib into third_party/parlaylib the first time (cpunit needs it
 too), builds bench.cpp with -O3, and runs it once per thread count.
@@ -17,7 +17,7 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 PARLAY = os.path.join(REPO_ROOT, "third_party", "parlaylib")
 
 

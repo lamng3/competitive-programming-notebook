@@ -47,7 +47,7 @@ cptest 930               # run it against LeetCode's examples
 | Unit tests | **38** across the C++ and Python libraries, run with `cpunit` |
 | Interview problems | **13**, each with C++, Python, and tests |
 | Templates | `contest`, `leetcode`, `minimal`, `oi`, plus `gen` for random tests |
-| Study list | 19 sections, from searching to parallel algorithms, ticked as the notebook gains each topic |
+| Study list | 18 sections, from searching to network communication, ticked as the notebook gains each topic |
 
 <sub>Counted from the files in this repository</sub>
 
@@ -57,12 +57,17 @@ cptest 930               # run it against LeetCode's examples
 Bloom filter, a count-min sketch, a cuckoo filter, a skip list, and eviction
 policies.
 
+`notebook/parallel/` holds parallel algorithms written with
+[ParlayLib](https://github.com/cmuparlay/parlaylib). It starts with prefix sums
+three ways, as exercises with a test and a benchmark; see
+[its README](notebook/parallel/README.md).
+
 <details>
 <summary><b>Repository layout</b></summary>
 
 ```text
 templates/    contest, leetcode, minimal, and oi starters; gen for cpdiff generators
-notebook/     C++ snippets to paste or include; notebook/databases/ for storage structures
+notebook/     C++ snippets to paste or include; databases/ for storage structures, parallel/ for parallel algorithms
 python/       paste-ready Python snippets, same categories as notebook/
 contests/     solutions by platform: leetcode, codeforces, atcoder, usaco, oi, icpc
 interviews/   interview problems, one folder per question, each with C++, Python, and tests
