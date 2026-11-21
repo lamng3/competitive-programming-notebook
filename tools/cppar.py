@@ -10,12 +10,15 @@ Usage:
     cppar prefix_sums --check --tsan     the same with ThreadSanitizer, to look for data races
     cppar --list                         the benchmarks there are
     cppar --new list_ranking             start a new one from the template
+    cppar play.cpp                       build any file with ParlayLib (-O3) and run it; later arguments go to it
+    cppar play.cpp --check               the same, built with sanitizers
 
 A benchmark is notebook/parallel/<name>/bench.cpp: a main() that registers a
 sequential reference and parallel versions with tools/parbench.h. The first
 run fetches ParlayLib into third_party/parlaylib. Builds are cached in .cppar/.
 """
 
+import hashlib
 import os
 import platform
 import subprocess
@@ -145,6 +148,29 @@ def new(name):
     return 0
 
 
+def play(path, rest):
+    """Build any .cpp file with ParlayLib and run it, for trying things out."""
+    path = os.path.abspath(path)
+    if not os.path.isfile(path):
+        print(f"No such file: {path}", file=sys.stderr)
+        return 1
+    mode = "tsan" if "--tsan" in rest else "check" if "--check" in rest else "bench"
+    rest = [a for a in rest if a not in ("--check", "--tsan")]
+    if not ensure_parlaylib():
+        return 1
+    stem = os.path.splitext(os.path.basename(path))[0]
+    key = hashlib.md5(path.encode()).hexdigest()[:8]  # the same file always gets the same build
+    exe = os.path.join(CACHE, "play", f"{stem}-{key}-{mode}")
+    if not (os.path.exists(exe) and os.path.getmtime(exe) >= os.path.getmtime(path)):
+        os.makedirs(os.path.dirname(exe), exist_ok=True)
+        cxx = os.environ.get("CXX", "c++")
+        cmd = [cxx, "-std=c++17", "-pthread", "-Wall", *FLAGS[mode],
+               "-I", TOOLS, "-I", os.path.join(PARLAY, "include"), path, "-o", exe]
+        if subprocess.run(cmd).returncode != 0:
+            return 1
+    return subprocess.run([exe, *rest]).returncode
+
+
 def main():
     args = sys.argv[1:]
     if not args or args[0] in ("-h", "--help"):
@@ -159,6 +185,9 @@ def main():
             print("usage: cppar --new <name>", file=sys.stderr)
             return 2
         return new(args[1])
+
+    if args[0].endswith(".cpp"):
+        return play(args[0], args[1:])
 
     name, rest = args[0].replace("-", "_"), args[1:]
     if name not in benchmarks():

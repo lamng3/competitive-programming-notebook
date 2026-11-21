@@ -32,6 +32,8 @@ cpdiff A --init          # A_brute.cpp and A_gen.cpp to fill in
 cpdiff A -n 1000         # stress test A.cpp against the brute force
 
 cppar prefix_sums        # time parallel versions against a sequential one
+cpnew play parlay        # play.cpp, an empty file with ParlayLib to try things in
+cppar play.cpp           # build it with ParlayLib and run it
 
 cpgen 930                # fetch a LeetCode problem into a C++ stub
 cptest 930               # run it against LeetCode's examples
@@ -48,7 +50,7 @@ cptest 930               # run it against LeetCode's examples
 | Python notebook | **37** paste-ready snippets in the same categories |
 | Unit tests | **38** across the C++ and Python libraries, run with `cpunit` |
 | Interview problems | **13**, each with C++, Python, and tests |
-| Templates | `contest`, `leetcode`, `minimal`, `oi`, plus `gen` for random tests |
+| Templates | `contest`, `leetcode`, `minimal`, `oi`, `parlay`, plus `gen` for random tests |
 | Study list | 18 sections, from searching to network communication, ticked as the notebook gains each topic |
 
 <sub>Counted from the files in this repository</sub>
@@ -60,15 +62,16 @@ Bloom filter, a count-min sketch, a cuckoo filter, a skip list, and eviction
 policies.
 
 `notebook/parallel/` holds parallel algorithms written with
-[ParlayLib](https://github.com/cmuparlay/parlaylib). It starts with prefix sums
-three ways, as exercises with a test and a benchmark; see
-[its README](notebook/parallel/README.md).
+[ParlayLib](https://github.com/cmuparlay/parlaylib). Each problem registers a
+sequential reference and parallel versions, and `cppar` checks them and times
+them on several thread counts. Prefix sums comes first, with Hillis and
+Steele's scan and Blelloch's to write; see [its README](notebook/parallel/README.md).
 
 <details>
 <summary><b>Repository layout</b></summary>
 
 ```text
-templates/    contest, leetcode, minimal, and oi starters; gen for cpdiff generators
+templates/    contest, leetcode, minimal, oi, and parlay starters; gen for cpdiff generators
 notebook/     C++ snippets to paste or include; databases/ for storage structures, parallel/ for parallel algorithms
 python/       paste-ready Python snippets, same categories as notebook/
 contests/     solutions by platform: leetcode, codeforces, atcoder, usaco, oi, icpc
@@ -112,7 +115,7 @@ void solve() {
 <details>
 <summary><b><code>cpnew &lt;file&gt; [template]</code>: start a solution from a template</b></summary>
 
-Copies a template into a new `.cpp` file in the current directory, or at the path you pass. It always loads templates from this repository, whatever directory you run it from. With no template argument it uses `templates/contest.cpp`; the others are `leetcode`, `minimal`, and `oi`.
+Copies a template into a new `.cpp` file in the current directory, or at the path you pass. It always loads templates from this repository, whatever directory you run it from. With no template argument it uses `templates/contest.cpp`; the others are `leetcode`, `minimal`, `oi`, and `parlay`, an empty file with ParlayLib included, to run with `cppar`.
 
 ```
 cpnew A                              # ./A.cpp from templates/contest.cpp
@@ -211,13 +214,16 @@ saved to .cpdiff/A/fail.in, fail.ans, fail.out; replay with --seed 500621391 -n 
 <details>
 <summary><b><code>cppar &lt;name&gt; [--check] [--lg L] [--threads P ...]</code>: check and time parallel algorithms</b></summary>
 
-Builds `notebook/parallel/<name>/bench.cpp`, which registers a sequential reference and parallel versions with `tools/parbench.h`, and prints how each version does on 1, 2, 4, ... threads: the median time per run and the speedup over the sequential one. `--check` instead checks every version on sizes from 0 to 2^20, built with sanitizers. The first run fetches [ParlayLib](https://github.com/cmuparlay/parlaylib) into `third_party/`.
+Builds `notebook/parallel/<name>/bench.cpp`, which registers a sequential reference and parallel versions with `tools/parbench.h`, and prints how each version does on 1, 2, 4, ... threads: the median time per run and the speedup over the sequential one. `--check` instead checks every version on sizes from 0 to 2^20, built with sanitizers. Given a `.cpp` file instead of a name, it builds that file with ParlayLib and runs it, which is the way to try things out. The first run fetches [ParlayLib](https://github.com/cmuparlay/parlaylib) into `third_party/`.
 
 ```
 cppar --list                    # the problems in notebook/parallel/
 cppar prefix_sums               # the timing table
 cppar prefix_sums --check       # correctness, with AddressSanitizer and UBSan (--tsan for data races)
 cppar --new list_ranking        # start a new problem from the template
+cpnew play parlay               # play.cpp, an empty file with ParlayLib included
+cppar play.cpp                  # build it with ParlayLib (-O3) and run it; --check for sanitizers
+PARLAY_NUM_THREADS=4 cppar play.cpp   # on 4 threads
 ```
 
 </details>

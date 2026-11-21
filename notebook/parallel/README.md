@@ -16,6 +16,18 @@ cppar prefix_sums --threads 1 8       # on these thread counts
 
 The first run fetches ParlayLib into `third_party/parlaylib`, which git ignores. Each cell of the table is the median time per run and the speedup over the sequential reference.
 
+## Learning ParlayLib
+
+To try ParlayLib on its own, start an empty file from the `parlay` template and run it with `cppar`:
+
+```sh
+cpnew play parlay                     # play.cpp in this folder, with ParlayLib included and an empty main
+cppar play.cpp                        # build it with ParlayLib and run it
+PARLAY_NUM_THREADS=4 cppar play.cpp   # the same on 4 threads
+```
+
+The [reference documentation](https://cmuparlay.github.io/parlaylib/) lists every function. To read the code, start with `sequence.h`, `parallel.h`, and `primitives.h` in `third_party/parlaylib/include/parlay/`, and `third_party/parlaylib/examples/` has dozens of algorithms written with it.
+
 ## Prefix sums
 
 Write [Hillis and Steele's scan](prefix_sums/HillisSteeleScan.h) and [Blelloch's](prefix_sums/BlellochScan.h), then:
