@@ -8,10 +8,10 @@ using namespace std;
 // d places to its left. A round may read only the values from the round
 // before; tmp is a second buffer of n elements for that.
 // Aim: O(n log n) work and O(log n) rounds, for every n, including 0.
-// Check: cpunit scan. Time: python3 notebook/parallel/prefix_sums/bench.py.
+// Check: cppar prefix_sums --check. Time: cppar prefix_sums.
 
 template <class T>
 void scan_hillis_steele(const T* in, T* out, T* tmp, size_t n) {
-    // TODO: write it. Until then, out is left as it is.
-    (void)in, (void)out, (void)tmp, (void)n;
+    // TODO: write it, then delete this line and the next.
+    throw logic_error("not written yet");
 }

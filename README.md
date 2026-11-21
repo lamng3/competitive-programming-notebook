@@ -31,6 +31,8 @@ cpbuild A                # sanitizers, warnings, and dbg(...) on
 cpdiff A --init          # A_brute.cpp and A_gen.cpp to fill in
 cpdiff A -n 1000         # stress test A.cpp against the brute force
 
+cppar prefix_sums        # time parallel versions against a sequential one
+
 cpgen 930                # fetch a LeetCode problem into a C++ stub
 cptest 930               # run it against LeetCode's examples
 ```
@@ -207,6 +209,20 @@ saved to .cpdiff/A/fail.in, fail.ans, fail.out; replay with --seed 500621391 -n 
 </details>
 
 <details>
+<summary><b><code>cppar &lt;name&gt; [--check] [--lg L] [--threads P ...]</code>: check and time parallel algorithms</b></summary>
+
+Builds `notebook/parallel/<name>/bench.cpp`, which registers a sequential reference and parallel versions with `tools/parbench.h`, and prints how each version does on 1, 2, 4, ... threads: the median time per run and the speedup over the sequential one. `--check` instead checks every version on sizes from 0 to 2^20, built with sanitizers. The first run fetches [ParlayLib](https://github.com/cmuparlay/parlaylib) into `third_party/`.
+
+```
+cppar --list                    # the problems in notebook/parallel/
+cppar prefix_sums               # the timing table
+cppar prefix_sums --check       # correctness, with AddressSanitizer and UBSan (--tsan for data races)
+cppar --new list_ranking        # start a new problem from the template
+```
+
+</details>
+
+<details>
 <summary><b><code>cpunit &lt;name&gt; [--cpp|--py]</code>: run a library unit test</b></summary>
 
 Finds `notebook/**/tests/<name>_test.cpp` and `python/**/tests/test_<name>.py`, builds C++ with sanitizers, runs Python with `unittest`, and exits nonzero on failure.
@@ -258,6 +274,9 @@ cptest() {
 }
 cpunit() {
     python3 "$CP_ROOT/tools/cpunit.py" "$@"
+}
+cppar() {
+    python3 "$CP_ROOT/tools/cppar.py" "$@"
 }
 cpdiff() {
     python3 "$CP_ROOT/tools/cpdiff.py" "$@"
