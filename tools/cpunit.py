@@ -37,7 +37,9 @@ def find_tests():
 def run_cpp(path):
     with tempfile.TemporaryDirectory() as tmp:
         exe = os.path.join(tmp, "test")
-        build = ["g++", "-std=c++17", "-fsanitize=address,undefined", "-Wall", "-Wextra", path, "-o", exe]
+        # ParlayLib, for todo/19_parallel_algorithms/, once bench.py --setup has fetched it.
+        parlay = os.path.join(REPO_ROOT, "third_party", "parlaylib", "include")
+        build = ["g++", "-std=c++17", "-fsanitize=address,undefined", "-Wall", "-Wextra", "-I", parlay, path, "-o", exe]
         if subprocess.run(build, cwd=os.path.dirname(path)).returncode != 0:
             return False
         return subprocess.run([exe], cwd=os.path.dirname(path)).returncode == 0

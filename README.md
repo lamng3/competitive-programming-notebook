@@ -47,7 +47,7 @@ cptest 930               # run it against LeetCode's examples
 | Unit tests | **38** across the C++ and Python libraries, run with `cpunit` |
 | Interview problems | **13**, each with C++, Python, and tests |
 | Templates | `contest`, `leetcode`, `minimal`, `oi`, plus `gen` for random tests |
-| Study list | 18 sections, from searching to network communication, ticked as the notebook gains each topic |
+| Study list | 19 sections, from searching to parallel algorithms, ticked as the notebook gains each topic |
 
 <sub>Counted from the files in this repository</sub>
 
