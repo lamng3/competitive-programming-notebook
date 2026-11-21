@@ -1,6 +1,5 @@
 // Blelloch's scan. Check: cppar blelloch_scan --check. Time: cppar blelloch_scan.
 #include <cstddef>
-#include <cstdint>
 
 #include <parlay/parallel.h>
 #include <parlay/primitives.h>
@@ -8,14 +7,14 @@
 
 #include <parbench.h>
 
-parlay::sequence<std::int64_t> scan_loop(const parlay::sequence<std::int64_t>& a) {
-    auto out = parlay::sequence<std::int64_t>::uninitialized(a.size());
-    std::int64_t sum = 0;
+parlay::sequence<long long> scan_loop(const parlay::sequence<long long>& a) {
+    auto out = parlay::sequence<long long>::uninitialized(a.size());
+    long long sum = 0;
     for (std::size_t i = 0; i < a.size(); i++) out[i] = sum += a[i];
     return out;
 }
 
-parlay::sequence<std::int64_t> blelloch_scan(const parlay::sequence<std::int64_t>& a) {
+parlay::sequence<long long> blelloch_scan(const parlay::sequence<long long>& a) {
     // TODO
     return {};
 }
@@ -23,7 +22,7 @@ parlay::sequence<std::int64_t> blelloch_scan(const parlay::sequence<std::int64_t
 int main() {
     std::size_t n = parbench::n(1 << 26);
     auto a = parlay::tabulate(n, [](std::size_t i) {
-        return static_cast<std::int64_t>(parlay::hash64(i) % 101) - 50;
+        return static_cast<long long>(parlay::hash64(i) % 101) - 50;
     });
 
     parbench::run("loop", [&] { return scan_loop(a); });  // the baseline

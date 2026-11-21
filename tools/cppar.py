@@ -41,7 +41,6 @@ FLAGS = {
 TEMPLATE = """\
 // {title}. Check: cppar {name} --check. Time: cppar {name}.
 #include <cstddef>
-#include <cstdint>
 
 #include <parlay/parallel.h>
 #include <parlay/primitives.h>
@@ -49,11 +48,11 @@ TEMPLATE = """\
 
 #include <parbench.h>
 
-parlay::sequence<std::int64_t> {name}_sequential(const parlay::sequence<std::int64_t>& a) {{
+parlay::sequence<long long> {name}_sequential(const parlay::sequence<long long>& a) {{
     return a;
 }}
 
-parlay::sequence<std::int64_t> {name}(const parlay::sequence<std::int64_t>& a) {{
+parlay::sequence<long long> {name}(const parlay::sequence<long long>& a) {{
     // TODO
     return {{}};
 }}
@@ -61,7 +60,7 @@ parlay::sequence<std::int64_t> {name}(const parlay::sequence<std::int64_t>& a) {
 int main() {{
     std::size_t n = parbench::n(1 << 24);
     auto a = parlay::tabulate(n, [](std::size_t i) {{
-        return static_cast<std::int64_t>(parlay::hash64(i) % 100);
+        return static_cast<long long>(parlay::hash64(i) % 100);
     }});
 
     parbench::run("sequential", [&] {{ return {name}_sequential(a); }});  // the baseline
