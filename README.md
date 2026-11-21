@@ -31,7 +31,7 @@ cpbuild A                # sanitizers, warnings, and dbg(...) on
 cpdiff A --init          # A_brute.cpp and A_gen.cpp to fill in
 cpdiff A -n 1000         # stress test A.cpp against the brute force
 
-cppar prefix_sums        # time parallel versions against a sequential one
+cppar hillis_steele_scan # time a parallel algorithm against a sequential one
 cpnew play parlay        # play.cpp, an empty file with ParlayLib to try things in
 cppar play.cpp           # build it with ParlayLib and run it
 
@@ -62,10 +62,10 @@ Bloom filter, a count-min sketch, a cuckoo filter, a skip list, and eviction
 policies.
 
 `notebook/parallel/` holds parallel algorithms written with
-[ParlayLib](https://github.com/cmuparlay/parlaylib). Each problem registers a
-sequential reference and parallel versions, and `cppar` checks them and times
-them on several thread counts. Prefix sums comes first, with Hillis and
-Steele's scan and Blelloch's to write; see [its README](notebook/parallel/README.md).
+[ParlayLib](https://github.com/cmuparlay/parlaylib), one folder per problem and
+one file per algorithm, checked and timed by `cppar`. Prefix sums comes first,
+with Hillis and Steele's scan and Blelloch's to write; see
+[its README](notebook/parallel/README.md).
 
 <details>
 <summary><b>Repository layout</b></summary>
@@ -214,16 +214,14 @@ saved to .cpdiff/A/fail.in, fail.ans, fail.out; replay with --seed 500621391 -n 
 <details>
 <summary><b><code>cppar &lt;name&gt; [--check] [--lg L] [--threads P ...]</code>: check and time parallel algorithms</b></summary>
 
-Checks and times the parallel versions in `notebook/parallel/<name>/` against a sequential one, on 1, 2, 4, ... threads, and prints the results as tables. Given a `.cpp` file, it builds it with [ParlayLib](https://github.com/cmuparlay/parlaylib) and runs it. See [`notebook/parallel/`](notebook/parallel/README.md).
+Builds a file in `notebook/parallel/` with [ParlayLib](https://github.com/cmuparlay/parlaylib) and runs it on 1, 2, 4, ... threads. Every function the file times with `parbench::run` is checked against the first, and the results print as tables. See [`notebook/parallel/`](notebook/parallel/README.md).
 
 ```
-cppar --list                    # the problems in notebook/parallel/
-cppar prefix_sums               # the timing table
-cppar prefix_sums --check       # correctness, with AddressSanitizer and UBSan (--tsan for data races)
-cppar --new list_ranking        # start a new problem from the template
-cpnew play parlay               # play.cpp, an empty file with ParlayLib included
-cppar play.cpp                  # build it with ParlayLib (-O3) and run it; --check for sanitizers
-PARLAY_NUM_THREADS=4 cppar play.cpp   # on 4 threads
+cppar hillis_steele_scan            # times and speedups on 1 to 12 threads
+cppar hillis_steele_scan --check    # compile errors, crashes, or pass/fail on sizes 0 to 2^20
+cppar prefix_sums                   # every file in notebook/parallel/prefix_sums/
+cppar play.cpp                      # any file; one without parbench::run just runs
+cppar --new prefix_sums/blocked_scan
 ```
 
 </details>

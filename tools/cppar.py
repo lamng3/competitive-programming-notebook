@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
-"""Check and time the parallel algorithms in notebook/parallel/, from any directory.
+"""Build and run parallel code with ParlayLib, from any directory.
 
 Usage:
-    cppar prefix_sums                    time every version against the sequential one, on 1, 2, 4, ... threads
-    cppar prefix_sums --lg 22            at n = 2^22 instead of the benchmark's default size
-    cppar prefix_sums --threads 1 4 8    on these thread counts
-    cppar prefix_sums --csv              CSV instead of a table
-    cppar prefix_sums --check            check every version on many sizes, built with sanitizers
-    cppar prefix_sums --check --tsan     the same with ThreadSanitizer, to look for data races
-    cppar --list                         the benchmarks there are
-    cppar --new list_ranking             start a new one from the template
-    cppar play.cpp                       build any file with ParlayLib (-O3) and run it; later arguments go to it
-    cppar play.cpp --check               the same, built with sanitizers
+    cppar hillis_steele_scan                  notebook/parallel/*/hillis_steele_scan.cpp on 1, 2, 4, ... threads
+    cppar hillis_steele_scan --check          the same on sizes from 0 to 2^20, built with sanitizers
+    cppar hillis_steele_scan --check --tsan   the same with ThreadSanitizer, to look for data races
+    cppar hillis_steele_scan --lg 22          at n = 2^22 (or --n 1000)
+    cppar hillis_steele_scan --threads 1 8    on these thread counts
+    cppar prefix_sums                         every file in notebook/parallel/prefix_sums/
+    cppar prime_sieve                         a file without parbench::run just runs once
+    cppar path/to/file.cpp                    any .cpp file
+    cppar --list                              the problems and their files
+    cppar --new prefix_sums/blocked_scan      a new file from a template
 
-A benchmark is notebook/parallel/<name>/bench.cpp: a main() that registers a
-sequential reference and parallel versions with tools/parbench.h. The first
-run fetches ParlayLib into third_party/parlaylib. Builds are cached in .cppar/.
+A file times functions with parbench::run (tools/parbench.h): the first run is
+the baseline, and every later one is checked against its answer. The first
+use fetches ParlayLib into third_party/parlaylib. Builds are cached in .cppar/
+until the file changes.
 """
 
 import hashlib
@@ -29,61 +30,68 @@ PAR_DIR = os.path.join(REPO_ROOT, "notebook", "parallel")
 TOOLS = os.path.join(REPO_ROOT, "tools")
 PARLAY = os.path.join(REPO_ROOT, "third_party", "parlaylib")
 CACHE = os.path.join(REPO_ROOT, ".cppar")
+CHECK_SIZES = [0, 1, 2, 3, 4, 5, 7, 8, 9, 16, 17, 100, 1000, 1023, 1024, 4097, 65536, 100003, 1 << 20]
 
 FLAGS = {
-    "bench": ["-O3", "-DNDEBUG"],
-    "check": ["-O1", "-g", "-fsanitize=address,undefined"],
+    "run": ["-O3", "-DNDEBUG"],
+    "check": ["-O1", "-g", "-fno-omit-frame-pointer", "-fsanitize=address,undefined"],
     "tsan": ["-O1", "-g", "-fsanitize=thread"],
 }
 
-BENCH_TEMPLATE = """\
-// {title}: a sequential version against parallel ones.
-//   cppar {name}            time them, on 1 thread up to every core
-//   cppar {name} --check    check them on many sizes
-#include <parbench.h>
-#include <parlay/primitives.h>
-#include "{header}"
+TEMPLATE = """\
+// {title}. Check: cppar {name} --check. Time: cppar {name}.
+#include <cstddef>
+#include <cstdint>
 
-using ll = long long;
-using Input = parlay::sequence<ll>;   // Change these to fit the problem:
-using Output = parlay::sequence<ll>;  // a graph, a tree, a batch of updates, ...
-
-int main(int argc, char** argv) {{
-    parbench::Bench<Input, Output> b("{title}");
-    b.default_size(24);
-    b.input([](size_t n, uint64_t seed) {{
-        return parlay::tabulate(n, [&](size_t i) {{ return ll(parlay::hash64(i + seed * n) % 100); }});
-    }});
-    b.sequential("sequential", [](const Input& in) {{
-        // The plain sequential algorithm: the answers to match and the time to beat.
-        return Output(in);
-    }});
-    b.parallel("mine", [](const Input& in) {{ return {function}(in); }});
-    return b.run(argc, argv);
-}}
-"""
-
-HEADER_TEMPLATE = """\
-#pragma once
-#include <bits/stdc++.h>
 #include <parlay/parallel.h>
+#include <parlay/primitives.h>
 #include <parlay/sequence.h>
-using namespace std;
 
-// {title}: what it computes, and the work and depth to aim for.
-// Check: cppar {name} --check. Time: cppar {name}.
+#include <parbench.h>
 
-parlay::sequence<long long> {function}(const parlay::sequence<long long>& in) {{
-    // TODO: write it, then delete this line and the next.
-    throw logic_error("not written yet");
+parlay::sequence<std::int64_t> {name}_sequential(const parlay::sequence<std::int64_t>& a) {{
+    return a;
+}}
+
+parlay::sequence<std::int64_t> {name}(const parlay::sequence<std::int64_t>& a) {{
+    // TODO
+    return {{}};
+}}
+
+int main() {{
+    std::size_t n = parbench::n(1 << 24);
+    auto a = parlay::tabulate(n, [](std::size_t i) {{
+        return static_cast<std::int64_t>(parlay::hash64(i) % 100);
+    }});
+
+    parbench::run("sequential", [&] {{ return {name}_sequential(a); }});  // the baseline
+    parbench::run("{label}", [&] {{ return {name}(a); }});
 }}
 """
 
 
-def benchmarks():
-    if not os.path.isdir(PAR_DIR):
-        return []
-    return sorted(d for d in os.listdir(PAR_DIR) if os.path.isfile(os.path.join(PAR_DIR, d, "bench.cpp")))
+def problems():
+    """{problem folder: [its .cpp files]} in notebook/parallel/."""
+    out = {}
+    if os.path.isdir(PAR_DIR):
+        for d in sorted(os.listdir(PAR_DIR)):
+            folder = os.path.join(PAR_DIR, d)
+            if os.path.isdir(folder):
+                cpps = sorted(f for f in os.listdir(folder) if f.endswith(".cpp"))
+                if cpps:
+                    out[d] = [os.path.join(folder, f) for f in cpps]
+    return out
+
+
+def resolve(arg):
+    """The .cpp files an argument names: a path, a problem folder, or a file's name."""
+    if arg.endswith(".cpp"):
+        return [os.path.abspath(arg)]
+    name = arg.replace("-", "_")
+    found = problems()
+    if name in found:
+        return found[name]
+    return [p for paths in found.values() for p in paths if os.path.basename(p) == name + ".cpp"]
 
 
 def ensure_parlaylib():
@@ -94,81 +102,176 @@ def ensure_parlaylib():
     return subprocess.run(["git", "clone", "--quiet", "--depth", "1", url, PARLAY]).returncode == 0
 
 
-def build(name, mode):
-    """Build notebook/parallel/<name>/bench.cpp for mode, unless the cached build is newer than its sources."""
-    folder = os.path.join(PAR_DIR, name)
-    sources = [os.path.join(TOOLS, "parbench.h")]
-    for root, _, files in os.walk(folder):
-        sources += [os.path.join(root, f) for f in files if f.endswith((".h", ".cpp"))]
-    exe = os.path.join(CACHE, f"{name}-{mode}")
-    if os.path.exists(exe) and os.path.getmtime(exe) >= max(os.path.getmtime(s) for s in sources):
+def build(path, mode):
+    """Compile path for mode, unless the cached build is newer than it and parbench.h. Compiler errors print as usual."""
+    stem = os.path.splitext(os.path.basename(path))[0]
+    key = hashlib.md5(path.encode()).hexdigest()[:8]  # the same file always gets the same build
+    exe = os.path.join(CACHE, f"{stem}-{key}-{mode}")
+    newest = max(os.path.getmtime(path), os.path.getmtime(os.path.join(TOOLS, "parbench.h")))
+    if os.path.exists(exe) and os.path.getmtime(exe) >= newest:
         return exe
     os.makedirs(CACHE, exist_ok=True)
     cxx = os.environ.get("CXX", "c++")
     cmd = [cxx, "-std=c++17", "-pthread", "-Wall", *FLAGS[mode],
-           "-I", TOOLS, "-I", os.path.join(PARLAY, "include"), os.path.join(folder, "bench.cpp"), "-o", exe]
-    print(f"Building {name} ({mode}) ...", file=sys.stderr)
+           "-I", TOOLS, "-I", os.path.join(PARLAY, "include"), path, "-o", exe]
+    print(f"Compiling {os.path.basename(path)} ...", file=sys.stderr)
     if subprocess.run(cmd).returncode != 0:
+        print(f"\nCompile failed: fix the errors above in {path}", file=sys.stderr)
         return None
     return exe
 
 
 def machine():
-    """The CPU's name and its hardware thread count."""
     name = platform.processor() or platform.machine()
     try:
         if platform.system() == "Darwin":
             name = subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True, text=True).stdout.strip()
         elif os.path.exists("/proc/cpuinfo"):
             with open("/proc/cpuinfo") as f:
-                for line in f:
-                    if line.startswith("model name"):
-                        name = line.split(":", 1)[1].strip()
-                        break
+                name = next((l.split(":", 1)[1].strip() for l in f if l.startswith("model name")), name)
     except OSError:
         pass
     return f"{name}, {os.cpu_count()} hardware threads"
 
 
-def new(name):
-    name = name.replace("-", "_")
-    folder = os.path.join(PAR_DIR, name)
-    if os.path.exists(folder):
-        print(f"{os.path.relpath(folder, REPO_ROOT)} already exists", file=sys.stderr)
-        return 1
-    camel = "".join(w.capitalize() for w in name.split("_"))
-    fields = {"name": name, "title": name.replace("_", " "), "header": camel + ".h", "function": name}
-    os.makedirs(folder)
-    with open(os.path.join(folder, "bench.cpp"), "w") as f:
-        f.write(BENCH_TEMPLATE.format(**fields))
-    with open(os.path.join(folder, camel + ".h"), "w") as f:
-        f.write(HEADER_TEMPLATE.format(**fields))
-    rel = os.path.relpath(folder, REPO_ROOT)
-    print(f"Created {rel}/bench.cpp and {rel}/{camel}.h. Fill in the sequential version and the stub, then: cppar {name}")
+def table(head, rows, numbers=True):
+    """Print a Markdown table: the first column left-aligned, the rest right-aligned if they hold numbers."""
+    w = [max(3, len(h), *(len(r[j]) for r in rows if j < len(r))) for j, h in enumerate(head)]
+    right = [numbers and j > 0 for j in range(len(head))]
+
+    def line(r):
+        cells = [(r[j] if j < len(r) else "").rjust(w[j]) if right[j] else (r[j] if j < len(r) else "").ljust(w[j])
+                 for j in range(len(head))]
+        print("| " + " | ".join(cells) + " |")
+
+    line(head)
+    print("|" + "|".join(("-" * (w[j] + 1) + ":") if right[j] else (":" + "-" * (w[j] + 1)) for j in range(len(head))) + "|")
+    for r in rows:
+        line(r)
+
+
+def ms_text(ms):
+    return f"{ms:.3f} ms" if ms < 1 else f"{ms:.2f} ms" if ms < 10 else f"{ms:.1f} ms" if ms < 100 else f"{ms:.0f} ms"
+
+
+def size_text(n):
+    s = f"{n:,}"
+    return f"2^{n.bit_length() - 1} = {s}" if n and n & (n - 1) == 0 else s
+
+
+def execute(exe, env):
+    """Run the program, splitting parbench's lines from the program's own output."""
+    proc = subprocess.run([exe], env=env, capture_output=True, text=True)
+    results, other, n = [], [], None
+    for line in proc.stdout.splitlines():
+        if line.startswith("@parbench\t"):
+            _, name, ms, status = (line.split("\t", 3) + [""])[:4]
+            results.append((name, float(ms), status))
+        elif line.startswith("@parbench-n\t"):
+            n = int(line.split("\t")[1])
+        else:
+            other.append(line)
+    return proc, results, other, n
+
+
+def progress(text):
+    """A status line that rewrites itself, only in a terminal."""
+    if sys.stderr.isatty():
+        print("\r" + text.ljust(50), end="", file=sys.stderr, flush=True)
+
+
+def crashed(proc, what):
+    if proc.returncode == 0:
+        return False
+    print(f"\nThe program crashed {what} (exit code {proc.returncode}). What it printed:\n", file=sys.stderr)
+    sys.stderr.write(proc.stdout + proc.stderr)
+    return True
+
+
+def sweep(path, exe, threads, n):
+    names, ms, status, output, size = [], {}, {}, None, None
+    for k, p in enumerate(threads):
+        progress(f"Running on {p} thread{'s' if p > 1 else ''} ({k + 1} of {len(threads)}) ...")
+        env = dict(os.environ, PARLAY_NUM_THREADS=str(p), PARBENCH_OUT="1")
+        if n:
+            env["PARBENCH_N"] = str(n)
+        proc, results, other, size = execute(exe, env)
+        if crashed(proc, f"on {p} threads"):
+            return 1
+        if output is None:
+            output = other
+        for name, t, s in results:
+            if name not in ms:
+                names.append(name)
+                ms[name] = {}
+            ms[name][p] = t
+            if s and name not in status:
+                status[name] = s if p == threads[0] else f"{s} (on {p} threads)"
+    progress("")
+    if sys.stderr.isatty():
+        print("\r", end="", file=sys.stderr)
+
+    if output:
+        print("Output:\n" + "\n".join(output) + "\n")
+    if not names:
+        print("No parbench::run calls ran.")
+        return 0
+    base = names[0]
+    head = ["function"] + [f"{p} thread" + ("s" if p > 1 else "") for p in threads]
+    timed = [x for x in names if x not in status]
+    print(f"{os.path.basename(path)} · n = {size_text(size) if size is not None else '?'} · median of 7 runs, after 2 warm-ups\n")
+    print("Time per run\n")
+    table(head, [[x] + [ms_text(ms[x][p]) if p in ms[x] else "" for p in threads] for x in timed])
+    others = [x for x in timed if x != base]
+    if base in timed and others:
+        print(f"\nSpeedup over {base}, run alongside: above 1x is faster\n")
+        rows = [[x] + [f"{ms[base][p] / ms[x][p]:.2f}x" if p in ms[x] and ms[x][p] > 0 else "" for p in threads]
+                for x in others]
+        table(head, rows)
+    if status:
+        print("\nNot timed\n")
+        table(["function", "why"], [[x, status[x]] for x in names if x in status], numbers=False)
     return 0
 
 
-def play(path, rest):
-    """Build any .cpp file with ParlayLib and run it, for trying things out."""
-    path = os.path.abspath(path)
-    if not os.path.isfile(path):
-        print(f"No such file: {path}", file=sys.stderr)
-        return 1
-    mode = "tsan" if "--tsan" in rest else "check" if "--check" in rest else "bench"
-    rest = [a for a in rest if a not in ("--check", "--tsan")]
-    if not ensure_parlaylib():
-        return 1
-    stem = os.path.splitext(os.path.basename(path))[0]
-    key = hashlib.md5(path.encode()).hexdigest()[:8]  # the same file always gets the same build
-    exe = os.path.join(CACHE, "play", f"{stem}-{key}-{mode}")
-    if not (os.path.exists(exe) and os.path.getmtime(exe) >= os.path.getmtime(path)):
-        os.makedirs(os.path.dirname(exe), exist_ok=True)
-        cxx = os.environ.get("CXX", "c++")
-        cmd = [cxx, "-std=c++17", "-pthread", "-Wall", *FLAGS[mode],
-               "-I", TOOLS, "-I", os.path.join(PARLAY, "include"), path, "-o", exe]
-        if subprocess.run(cmd).returncode != 0:
+def check(path, exe):
+    first_problem, names = {}, []
+    for k, n in enumerate(CHECK_SIZES):
+        progress(f"Checking n = {n:,} ({k + 1} of {len(CHECK_SIZES)}) ...")
+        env = dict(os.environ, PARBENCH_OUT="1", PARBENCH_CHECK="1", PARBENCH_N=str(n))
+        proc, results, _, _ = execute(exe, env)
+        if crashed(proc, f"at n = {n:,}"):
             return 1
-    return subprocess.run([exe, *rest]).returncode
+        for name, _, s in results:
+            if name not in names:
+                names.append(name)
+            if s and name not in first_problem:
+                first_problem[name] = s if s == "not written yet" else f"FAIL at n = {n:,}: {s}"
+    progress("")
+    if sys.stderr.isatty():
+        print("\r", end="", file=sys.stderr)
+    if not names:
+        print("No parbench::run calls ran.")
+        return 0
+    print(f"{os.path.basename(path)}: every function against {names[0]}, on {len(CHECK_SIZES)} sizes from 0 to 2^20\n")
+    rows = [[names[0], "baseline"]] + [[x, first_problem.get(x, "pass")] for x in names[1:]]
+    table(["function", "result"], rows, numbers=False)
+    return 1 if first_problem else 0
+
+
+def new(name):
+    name = name.replace("-", "_")
+    folder, _, stem = name.rpartition("/")
+    name = stem
+    path = os.path.join(PAR_DIR, folder or name, name + ".cpp")
+    if os.path.exists(path):
+        print(f"{os.path.relpath(path, REPO_ROOT)} already exists", file=sys.stderr)
+        return 1
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write(TEMPLATE.format(name=name, title=name.replace("_", " ").capitalize(), label=name.replace("_", "-")))
+    print(f"Created {os.path.relpath(path, REPO_ROOT)}. Write the functions, then: cppar {name} --check")
+    return 0
 
 
 def main():
@@ -177,8 +280,8 @@ def main():
         print(__doc__)
         return 0 if args else 2
     if args[0] == "--list":
-        for b in benchmarks():
-            print(b)
+        for d, paths in problems().items():
+            print(f"{d}: {', '.join(os.path.basename(p)[:-4] for p in paths)}")
         return 0
     if args[0] == "--new":
         if len(args) != 2:
@@ -186,27 +289,58 @@ def main():
             return 2
         return new(args[1])
 
-    if args[0].endswith(".cpp"):
-        return play(args[0], args[1:])
-
-    name, rest = args[0].replace("-", "_"), args[1:]
-    if name not in benchmarks():
-        print(f"No benchmark named '{name}'. There are: {', '.join(benchmarks()) or 'none yet'}", file=sys.stderr)
+    paths, rest = resolve(args[0]), args[1:]
+    if not paths or not all(os.path.isfile(p) for p in paths):
+        known = ", ".join(f"{d}/{os.path.basename(p)[:-4]}" for d, ps in problems().items() for p in ps)
+        print(f"Nothing named {args[0]}. In notebook/parallel/: {known or 'nothing yet'}", file=sys.stderr)
         return 1
-    mode = "tsan" if "--tsan" in rest else "check" if "--check" in rest else "bench"
-    rest = [a for a in rest if a != "--tsan"]
-    if mode == "tsan" and "--check" not in rest:
-        rest.append("--check")
+    threads, n, i = [], None, 0
+    flags = set()
+    while i < len(rest):
+        a = rest[i]
+        if a in ("--check", "--tsan"):
+            flags.add(a)
+        elif a in ("--lg", "--n") and i + 1 < len(rest):
+            n = (1 << int(rest[i + 1])) if a == "--lg" else int(rest[i + 1])
+            i += 1
+        elif a == "--threads":
+            while i + 1 < len(rest) and rest[i + 1].isdigit():
+                threads.append(int(rest[i + 1]))
+                i += 1
+        else:
+            print(f"Unknown option {a}\n{__doc__}", file=sys.stderr)
+            return 2
+        i += 1
 
     if not ensure_parlaylib():
         return 1
-    exe = build(name, mode)
+    mode = "tsan" if "--tsan" in flags else "check" if "--check" in flags else "run"
+    if not threads:
+        p, top = 1, os.cpu_count() or 1
+        while p < top:
+            threads.append(p)
+            p *= 2
+        threads.append(top)
+    print(machine() + "\n", flush=True)
+    status = 0
+    for k, path in enumerate(paths):
+        if k:
+            print("\n" + "-" * 60 + "\n", flush=True)
+        status = max(status, run_file(path, mode, threads, n))
+    return status
+
+
+def run_file(path, mode, threads, n):
+    exe = build(path, mode)
     if exe is None:
         return 1
-    if "--csv" not in rest:
-        print(machine() + "\n")
-        sys.stdout.flush()
-    return subprocess.run([exe, *rest]).returncode
+    with open(path) as f:
+        uses_parbench = "parbench::run" in f.read()
+    if not uses_parbench:
+        return subprocess.run([exe]).returncode  # a plain program: run it once, as it is
+    if mode != "run":
+        return check(path, exe)
+    return sweep(path, exe, threads, n)
 
 
 if __name__ == "__main__":
