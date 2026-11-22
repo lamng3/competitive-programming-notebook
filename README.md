@@ -25,6 +25,7 @@ After [setup](#-setup), from any directory:
 
 ```bash
 cpnew A                  # ./A.cpp from the contest template
+cpsnip DSU --into A      # paste a notebook snippet into A.cpp (--kactl for KACTL's)
 cpbuild A                # sanitizers, warnings, and dbg(...) on
 ./solution < in.txt
 
@@ -76,7 +77,7 @@ notebook/     C++ snippets to paste or include; databases/ for storage structure
 python/       paste-ready Python snippets, same categories as notebook/
 contests/     solutions by platform: leetcode, codeforces, atcoder, usaco, oi, icpc
 interviews/   interview problems, one folder per question, each with C++, Python, and tests
-tools/        cpnew, cpgen, cptest, cpunit, cpdiff
+tools/        cpnew, cpgen, cptest, cpunit, cpdiff, cppar, cpsnip
 ```
 
 </details>
@@ -124,6 +125,28 @@ cpnew A -f                           # overwrite if A.cpp exists
 cpnew A --py                         # ./A.py from python/template.py
 cpnew A leetcode --py                # ./A.py from python/leetcode.py
 ```
+
+</details>
+
+<details>
+<summary><b><code>cpsnip [name...] [--into file] [--kactl|--py]</code>: paste a snippet into a solution</b></summary>
+
+Pastes a data structure or algorithm into a solution, so you can use it right away. It draws on two libraries: this repository's `notebook/`, the default, and [KACTL](https://github.com/kth-competitive-programming/kactl), the KTH team's notebook, with `--kactl` (cloned into `third_party/kactl` the first time). `--py` uses the Python snippets in `python/`.
+
+```
+cpsnip                              # list the notebook's snippets
+cpsnip seg                          # the ones whose names contain "seg"
+cpsnip DSU --into A                 # paste notebook/graphs/dsu/DSU.h into A.cpp
+cpsnip FenwickTree --into 2179      # into contests/leetcode/solve/2179.cpp, above class Solution
+cpsnip FenwickTree                  # print it and copy it, to paste into LeetCode's editor
+cpsnip --kactl                      # list KACTL's snippets
+cpsnip HLD --kactl --into 2179      # KACTL's heavy-light decomposition, with the segment tree it uses
+```
+
+- The paste goes above `class Solution`, or above `preprocess`, `solve`, or `main` in the contest templates. A snippet brings the snippets it includes, and one already in the file is not pasted again.
+- The file keeps its own `<bits/stdc++.h>`, `using namespace std`, `MOD`, and `INF`, and the snippet's copies are left out. When a snippet defines one of them differently (KACTL's `MinCostMaxFlow` has `const ll INF`), cpsnip says so: rename or remove one.
+- KACTL's code uses `rep`, `all`, `sz`, `ll`, `pii`, and `vi`, so a short prelude defines whichever the file lacks. Its header comment stays, with what each function takes and how fast it runs. Its `LazySegmentTree` comes without the bump allocator it normally includes, which never frees memory (`cpsnip BumpAllocator --kactl` adds it).
+- A few KACTL snippets are templates to fill in, like `MoQueries` and `DivideAndConquerDP`. A few need GCC, like `OrderStatisticTree` and `HashMap` with `<bits/extc++.h>`: Codeforces has it, the Mac's clang doesn't.
 
 </details>
 
@@ -280,6 +303,9 @@ cpunit() {
 }
 cppar() {
     python3 "$CP_ROOT/tools/cppar.py" "$@"
+}
+cpsnip() {
+    python3 "$CP_ROOT/tools/cpsnip.py" "$@"
 }
 cpdiff() {
     python3 "$CP_ROOT/tools/cpdiff.py" "$@"
