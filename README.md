@@ -51,7 +51,6 @@ cptest 930               # run it against LeetCode's examples
 | Unit tests | **38** across the C++ and Python libraries, run with `cpunit` |
 | Interview problems | **13**, each with C++, Python, and tests |
 | Templates | `contest`, `leetcode`, `minimal`, `oi`, `parlay`, plus `gen` for random tests |
-| Study list | 18 sections, from searching to network communication, ticked as the notebook gains each topic |
 
 <sub>Counted from the files in this repository</sub>
 
@@ -76,7 +75,6 @@ notebook/     C++ snippets to paste or include; databases/ for storage structure
 python/       paste-ready Python snippets, same categories as notebook/
 contests/     solutions by platform: leetcode, codeforces, atcoder, usaco, oi, icpc
 interviews/   interview problems, one folder per question, each with C++, Python, and tests
-todo/         a C++ study list in numbered sections, one stub per topic
 tools/        cpnew, cpgen, cptest, cpunit, cpdiff
 ```
 
