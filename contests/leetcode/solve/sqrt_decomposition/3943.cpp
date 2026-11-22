@@ -116,12 +116,10 @@ struct SqrtDecomposition {
 class Solution {
 public:
     vi numberOfPairs(vi& nums1, vi& nums2, vii& queries) {
-        int n = sz(nums2);
-
         map<int, int> cnt1;
         for (int x : nums1) cnt1[x]++;
 
-        int block_size = max(1, (int)sqrt(n * sz(cnt1) / 6));
+        int block_size = sqrt(sz(nums2));
         SqrtDecomposition blocks(block_size, nums2);
 
         vi ans;
