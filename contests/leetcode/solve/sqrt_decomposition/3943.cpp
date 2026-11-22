@@ -75,14 +75,13 @@ struct SqrtDecomposition {
     int BLOCK_SIZE;
     vector<ll> A;
     vector<ll> lazy;
-    vector<unordered_map<ll, int>> freq;
+    vector<map<ll, int>> freq;
 
-    SqrtDecomposition(int block_size, const vi& a) : BLOCK_SIZE(block_size), A(a.begin(), a.end()) {
-        int num_blocks = ((int)A.size() + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    SqrtDecomposition(int block_size, const vi& a) : BLOCK_SIZE(block_size), A(all(a)) {
+        int num_blocks = (sz(A) + BLOCK_SIZE - 1) / BLOCK_SIZE;
         lazy.assign(num_blocks, 0);
         freq.resize(num_blocks);
-        for (auto& f : freq) f.reserve(2 * BLOCK_SIZE);
-        REP(i, (int)A.size()) freq[i / BLOCK_SIZE][A[i]]++;
+        REP(i, sz(A)) freq[i / BLOCK_SIZE][A[i]]++;
     }
 
     void add(int i, ll v) {
@@ -105,7 +104,7 @@ struct SqrtDecomposition {
 
     int count(ll x) {
         int res = 0;
-        REP(b, (int)freq.size()) {
+        REP(b, sz(freq)) {
             auto it = freq[b].find(x - lazy[b]);
             if (it != freq[b].end()) res += it->se;
         }
@@ -117,12 +116,12 @@ struct SqrtDecomposition {
 class Solution {
 public:
     vi numberOfPairs(vi& nums1, vi& nums2, vii& queries) {
-        int n = (int)nums2.size();
+        int n = sz(nums2);
 
         map<int, int> cnt1;
         for (int x : nums1) cnt1[x]++;
 
-        int block_size = max(1, (int)sqrt(n * (int)cnt1.size() / 6));
+        int block_size = max(1, (int)sqrt(n * sz(cnt1) / 6));
         SqrtDecomposition blocks(block_size, nums2);
 
         vi ans;
