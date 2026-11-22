@@ -51,6 +51,7 @@ cptest 930               # run it against LeetCode's examples
 | Unit tests | **38** across the C++ and Python libraries, run with `cpunit` |
 | Interview problems | **13**, each with C++, Python, and tests |
 | Templates | `contest`, `leetcode`, `minimal`, `oi`, `parlay`, plus `gen` for random tests |
+| LeetCode map | **140** handpicked problems for the USACO Guide's Platinum and Advanced modules, in [`contests/leetcode`](contests/leetcode) |
 
 <sub>Counted from the files in this repository</sub>
 
