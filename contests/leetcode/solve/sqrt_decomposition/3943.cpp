@@ -71,14 +71,11 @@ const int MOD = 1e9+7;
 
 mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
 
-/*
-Square Root Decomposition: range add, count the elements equal to x
-*/
 struct SqrtDecomposition {
     int BLOCK_SIZE;
     vector<ll> A;
-    vector<ll> lazy;                      // added to every element of its block
-    vector<unordered_map<ll, int>> freq;  // per block: value -> count, without lazy
+    vector<ll> lazy;
+    vector<unordered_map<ll, int>> freq;
 
     SqrtDecomposition(int block_size, const vi& a) : BLOCK_SIZE(block_size), A(a.begin(), a.end()) {
         int num_blocks = ((int)A.size() + BLOCK_SIZE - 1) / BLOCK_SIZE;
@@ -88,7 +85,6 @@ struct SqrtDecomposition {
         REP(i, (int)A.size()) freq[i / BLOCK_SIZE][A[i]]++;
     }
 
-    /* O(1): add v to A[i] */
     void add(int i, ll v) {
         auto& f = freq[i / BLOCK_SIZE];
         if (--f[A[i]] == 0) f.erase(A[i]);
@@ -96,7 +92,6 @@ struct SqrtDecomposition {
         f[A[i]]++;
     }
 
-    /* O(BLOCK_SIZE + n / BLOCK_SIZE): add v to A[L..R] */
     void add(int L, int R, ll v) {
         int bL = L / BLOCK_SIZE, bR = R / BLOCK_SIZE;
         if (bL == bR) {
@@ -108,7 +103,6 @@ struct SqrtDecomposition {
         FOR(i, bR * BLOCK_SIZE, R) add(i, v);
     }
 
-    /* O(n / BLOCK_SIZE): how many elements equal x */
     int count(ll x) {
         int res = 0;
         REP(b, (int)freq.size()) {
@@ -125,12 +119,9 @@ public:
     vi numberOfPairs(vi& nums1, vi& nums2, vii& queries) {
         int n = (int)nums2.size();
 
-        // nums1 has at most 5 values: keep each distinct value with its count
         map<int, int> cnt1;
         for (int x : nums1) cnt1[x]++;
 
-        // an update rewrites up to 2 * block_size elements, 3 hash operations each, and a count
-        // looks once in each block for each value of nums1: this block size balances the two
         int block_size = max(1, (int)sqrt(n * (int)cnt1.size() / 6));
         SqrtDecomposition blocks(block_size, nums2);
 
