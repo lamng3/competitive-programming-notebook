@@ -46,7 +46,7 @@ cptest 930               # run it against LeetCode's examples
 
 | Area | Contents |
 |:--|:--|
-| Contest solutions | **186**: LeetCode 122, Codeforces 50, USACO 7, OI 3, AtCoder 2, ICPC 2 |
+| Contest solutions | **187**: LeetCode 123, Codeforces 50, USACO 7, OI 3, AtCoder 2, ICPC 2 |
 | C++ notebook | **30** snippets: data structures, databases, graphs, math, strings, trees |
 | Python notebook | **37** paste-ready snippets in the same categories |
 | Unit tests | **38** across the C++ and Python libraries, run with `cpunit` |

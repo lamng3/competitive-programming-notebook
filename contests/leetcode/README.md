@@ -4,7 +4,7 @@ Solutions are in `solve/`, by technique (contests in `weekly/` and `biweekly/`),
 
 ## USACO Guide on LeetCode
 
-LeetCode practice for the modules of the USACO Guide's [Platinum](https://usaco.guide/plat) and [Advanced](https://usaco.guide/adv) sections: 140 handpicked problems, at most ten a module, easiest first by [contest rating](https://github.com/zerotrac/leetcode_problem_rating) (older problems have none). They are Hard unless marked Medium; 🔒 is premium. A ✓ links to a solution here (17 so far). For modules LeetCode doesn't cover, use the guide's own problems.
+LeetCode practice for the modules of the USACO Guide's [Platinum](https://usaco.guide/plat) and [Advanced](https://usaco.guide/adv) sections: 140 handpicked problems, at most ten a module, easiest first by [contest rating](https://github.com/zerotrac/leetcode_problem_rating) (older problems have none). They are Hard unless marked Medium; 🔒 is premium. A ✓ links to a solution here (18 so far). For modules LeetCode doesn't cover, use the guide's own problems.
 
 ### Platinum
 
@@ -31,7 +31,7 @@ LeetCode practice for the modules of the USACO Guide's [Platinum](https://usaco.
 |  | [715. Range Module](https://leetcode.com/problems/range-module/) |  |
 |  | [2276. Count Integers in Intervals](https://leetcode.com/problems/count-integers-in-intervals/) | 2222 |
 | [2D Range Queries](https://usaco.guide/plat/2DRQ) | [✓](solve/quadtree/308.py) [308. Range Sum Query 2D - Mutable](https://leetcode.com/problems/range-sum-query-2d-mutable/) (Medium, 🔒) |  |
-| [Square Root Decomposition](https://usaco.guide/plat/sqrt) | [3943. Number of Pairs After Increment](https://leetcode.com/problems/number-of-pairs-after-increment/) | 2410 |
+| [Square Root Decomposition](https://usaco.guide/plat/sqrt) | [✓](solve/sqrt_decomposition/3943.cpp) [3943. Number of Pairs After Increment](https://leetcode.com/problems/number-of-pairs-after-increment/) | 2410 |
 |  | [✓](solve/mo_algorithm/3636.cpp) [3636. Threshold Majority Queries](https://leetcode.com/problems/threshold-majority-queries/) | 2451 |
 |  | [✓](solve/combine_algorithms/3655.cpp) [3655. XOR After Range Multiplication Queries II](https://leetcode.com/problems/xor-after-range-multiplication-queries-ii/) | 2454 |
 |  | [1714. Sum Of Special Evenly-Spaced Elements In Array](https://leetcode.com/problems/sum-of-special-evenly-spaced-elements-in-array/) (🔒) |  |
