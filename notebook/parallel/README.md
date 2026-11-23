@@ -30,12 +30,20 @@ Your scan gets a row there once it is written, and a row in a second table of sp
 
 In VS Code, ⇧⌘B runs the check on the open file, and compile errors show in the Problems panel.
 
+## Start a new file
+
+```sh
+cppar --new prefix_sums/blocked_scan   # prefix_sums/blocked_scan.cpp, from any folder
+cppar --new blocked_scan               # the same, from inside prefix_sums/
+```
+
+Write the sequential version first, since it is the answer key, then the parallel one at the `TODO`. `main` already times both.
+
 ## Try things
 
 ```sh
-cppar prime_sieve                  # a file without parbench::run just runs
-cpnew play parlay && cppar play.cpp
-cppar --new prefix_sums/blocked_scan
+cppar prime_sieve                     # a file without parbench::run just runs
+cpnew play parlay && cppar play.cpp   # a blank file with ParlayLib, to try things in
 ```
 
 The [ParlayLib reference](https://cmuparlay.github.io/parlaylib/) lists every function, and `third_party/parlaylib/examples/` has dozens of algorithms written with it.

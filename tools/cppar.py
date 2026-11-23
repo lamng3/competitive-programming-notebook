@@ -11,7 +11,8 @@ Usage:
     cppar prime_sieve                         a file without parbench::run just runs once
     cppar path/to/file.cpp                    any .cpp file
     cppar --list                              the problems and their files
-    cppar --new prefix_sums/blocked_scan      a new file from a template
+    cppar --new prefix_sums/blocked_scan      a new file from a template, in notebook/parallel/prefix_sums/
+    cppar --new blocked_scan                  the same, run from inside notebook/parallel/prefix_sums/
 
 A file times functions with parbench::run (tools/parbench.h): the first run is
 the baseline, and every later one is checked against its answer. The first
@@ -25,7 +26,7 @@ import platform
 import subprocess
 import sys
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))  # real, to compare with the current folder
 PAR_DIR = os.path.join(REPO_ROOT, "notebook", "parallel")
 TOOLS = os.path.join(REPO_ROOT, "tools")
 PARLAY = os.path.join(REPO_ROOT, "third_party", "parlaylib")
@@ -52,7 +53,7 @@ parlay::sequence<long long> {name}_sequential(const parlay::sequence<long long>&
     return a;
 }}
 
-parlay::sequence<long long> {name}(const parlay::sequence<long long>& a) {{
+parlay::sequence<long long> {name}_parallel(const parlay::sequence<long long>& a) {{
     // TODO
     return {{}};
 }}
@@ -64,33 +65,30 @@ int main() {{
     }});
 
     parbench::run("sequential", [&] {{ return {name}_sequential(a); }});  // the baseline
-    parbench::run("{label}", [&] {{ return {name}(a); }});
+    parbench::run("{label}", [&] {{ return {name}_parallel(a); }});
 }}
 """
 
 
 def problems():
-    """{problem folder: [its .cpp files]} in notebook/parallel/."""
+    """{folder in notebook/parallel/, at any depth: [its .cpp files]}."""
     out = {}
-    if os.path.isdir(PAR_DIR):
-        for d in sorted(os.listdir(PAR_DIR)):
-            folder = os.path.join(PAR_DIR, d)
-            if os.path.isdir(folder):
-                cpps = sorted(f for f in os.listdir(folder) if f.endswith(".cpp"))
-                if cpps:
-                    out[d] = [os.path.join(folder, f) for f in cpps]
+    for root, dirs, files in os.walk(PAR_DIR):
+        dirs[:] = sorted(d for d in dirs if not d.startswith("."))
+        cpps = sorted(f for f in files if f.endswith(".cpp"))
+        if cpps and root != PAR_DIR:
+            out[os.path.relpath(root, PAR_DIR)] = [os.path.join(root, f) for f in cpps]
     return out
 
 
 def resolve(arg):
-    """The .cpp files an argument names: a path, a problem folder, or a file's name."""
+    """The .cpp files an argument names: a path, a folder in notebook/parallel/ (with its subfolders), or a file's name."""
     if arg.endswith(".cpp"):
         return [os.path.abspath(arg)]
-    name = arg.replace("-", "_")
+    name = arg.replace("-", "_").strip("/")
     found = problems()
-    if name in found:
-        return found[name]
-    return [p for paths in found.values() for p in paths if os.path.basename(p) == name + ".cpp"]
+    in_folder = [p for d, paths in found.items() if d == name or d.startswith(name + "/") for p in paths]
+    return in_folder or [p for paths in found.values() for p in paths if os.path.basename(p) == name + ".cpp"]
 
 
 def ensure_parlaylib():
@@ -259,15 +257,32 @@ def check(path, exe):
     return 1 if first_problem else 0
 
 
-def new(name):
-    name = name.replace("-", "_")
-    folder, _, stem = name.rpartition("/")
-    name = stem
-    path = os.path.join(PAR_DIR, folder or name, name + ".cpp")
+def new(arg):
+    """A file from TEMPLATE. <folder>/<name> goes in that folder of notebook/parallel/. A bare name goes in the
+    current folder when that is inside notebook/parallel/, and in a new folder of its own otherwise."""
+    arg = arg.replace("-", "_")
+    if arg.endswith(".cpp"):
+        arg = arg[:-4]
+    folder, name = os.path.split(arg)
+    if not name.isidentifier():
+        print(f"{name or arg} can't name the C++ functions in the file: use letters, digits, and _, "
+              "not starting with a digit", file=sys.stderr)
+        return 2
+    here = os.path.realpath(os.getcwd())
+    if folder:
+        folder = os.path.normpath(os.path.join(PAR_DIR, folder))
+    elif here.startswith(PAR_DIR + os.sep):
+        folder = here
+    else:
+        folder = os.path.join(PAR_DIR, name)
+    if not folder.startswith(PAR_DIR + os.sep):
+        print(f"{arg} would be outside notebook/parallel/", file=sys.stderr)
+        return 2
+    path = os.path.join(folder, name + ".cpp")
     if os.path.exists(path):
         print(f"{os.path.relpath(path, REPO_ROOT)} already exists", file=sys.stderr)
         return 1
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    os.makedirs(folder, exist_ok=True)
     with open(path, "w") as f:
         f.write(TEMPLATE.format(name=name, title=name.replace("_", " ").capitalize(), label=name.replace("_", "-")))
     print(f"Created {os.path.relpath(path, REPO_ROOT)}. Write the functions, then: cppar {name} --check")
@@ -285,7 +300,7 @@ def main():
         return 0
     if args[0] == "--new":
         if len(args) != 2:
-            print("usage: cppar --new <name>", file=sys.stderr)
+            print("usage: cppar --new [<folder>/]<name>", file=sys.stderr)
             return 2
         return new(args[1])
 

@@ -239,11 +239,12 @@ saved to .cpdiff/A/fail.in, fail.ans, fail.out; replay with --seed 500621391 -n 
 Builds a file in `notebook/parallel/` with [ParlayLib](https://github.com/cmuparlay/parlaylib) and runs it on 1, 2, 4, ... threads. Every function the file times with `parbench::run` is checked against the first, and the results print as tables. See [`notebook/parallel/`](notebook/parallel/README.md).
 
 ```
-cppar hillis_steele_scan            # times and speedups on 1 to 12 threads
-cppar hillis_steele_scan --check    # compile errors, crashes, or pass/fail on sizes 0 to 2^20
-cppar prefix_sums                   # every file in notebook/parallel/prefix_sums/
-cppar play.cpp                      # any file; one without parbench::run just runs
-cppar --new prefix_sums/blocked_scan
+cppar hillis_steele_scan              # times and speedups on 1 to 12 threads
+cppar hillis_steele_scan --check      # compile errors, crashes, or pass/fail on sizes 0 to 2^20
+cppar prefix_sums                     # every file in notebook/parallel/prefix_sums/
+cppar play.cpp                        # any file; one without parbench::run just runs
+cppar --new prefix_sums/blocked_scan  # a new file from the template, from any folder
+cppar --new blocked_scan              # the same, run from inside notebook/parallel/prefix_sums/
 ```
 
 </details>
