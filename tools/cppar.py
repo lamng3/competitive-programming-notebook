@@ -81,10 +81,18 @@ def problems():
     return out
 
 
+def cwd():
+    """The current folder. A git checkout or rebase can delete it from under the shell, even if it then remakes it."""
+    try:
+        return os.getcwd()
+    except FileNotFoundError:
+        sys.exit('This folder was deleted, maybe by a git checkout or rebase. Run cd "$PWD" to go back in, then try again.')
+
+
 def resolve(arg):
     """The .cpp files an argument names: a path, a folder in notebook/parallel/ (with its subfolders), or a file's name."""
     if arg.endswith(".cpp"):
-        return [os.path.abspath(arg)]
+        return [os.path.normpath(os.path.join(cwd(), arg))]
     name = arg.replace("-", "_").strip("/")
     found = problems()
     in_folder = [p for d, paths in found.items() if d == name or d.startswith(name + "/") for p in paths]
@@ -268,13 +276,11 @@ def new(arg):
         print(f"{name or arg} can't name the C++ functions in the file: use letters, digits, and _, "
               "not starting with a digit", file=sys.stderr)
         return 2
-    here = os.path.realpath(os.getcwd())
     if folder:
         folder = os.path.normpath(os.path.join(PAR_DIR, folder))
-    elif here.startswith(PAR_DIR + os.sep):
-        folder = here
     else:
-        folder = os.path.join(PAR_DIR, name)
+        here = os.path.realpath(cwd())
+        folder = here if here.startswith(PAR_DIR + os.sep) else os.path.join(PAR_DIR, name)
     if not folder.startswith(PAR_DIR + os.sep):
         print(f"{arg} would be outside notebook/parallel/", file=sys.stderr)
         return 2
