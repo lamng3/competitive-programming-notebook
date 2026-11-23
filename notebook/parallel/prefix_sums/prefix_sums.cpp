@@ -15,8 +15,17 @@ parlay::sequence<long long> scan_loop(const parlay::sequence<long long>& a) {
 }
 
 parlay::sequence<long long> scan_hillis_steele(const parlay::sequence<long long>& a) {
-    parlay::parallel_for(1, a.size(), );
-    return {};
+    const std::size_t n = a.size();
+    parlay::sequence<long long> cur = a; // copy
+    auto nxt = parlay::sequence<long long>::uninitialized(n);
+    for (std::size_t d = 1; d < n; d <<= 1) {
+        parlay::parallel_for(0, n, [&](std::size_t i) {
+            if (i >= d) nxt[i] = cur[i] + cur[i - d];
+            else nxt[i] = cur[i];
+        });
+        std::swap(cur, nxt);
+    }
+    return cur;
 }
 
 parlay::sequence<long long> scan_blelloch(const parlay::sequence<long long>& a) {
