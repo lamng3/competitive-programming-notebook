@@ -1,13 +1,5 @@
 // Build & run from tests/:
 //   g++ -std=c++17 -fsanitize=address,undefined -Wall splaytree_test.cpp -o /tmp/sttest && /tmp/sttest
-#include <bits/stdc++.h>
-using namespace std;
-using ll = long long;
-using vi = vector<int>;
-#define REP(i, n) for (int i = 0; i < (n); i++)
-#define all(x) (x).begin(), (x).end()
-#define sz(x) (int)((x).size())
-#define pb push_back
 #include "../SplayTree.h"
 
 static int checks = 0, fails = 0;
@@ -34,12 +26,12 @@ int main() {
     // 2) random operations against a vector, starting from empty and nonempty sequences
     mt19937 rng(7);
     for (int it = 0; it < 300; it++) {
-        vector<ll> a(rng() % 20);
-        for (ll& x : a) x = ll(rng() % 21) - 10;
+        vector<long long> a(rng() % 20);
+        for (long long& x : a) x = (long long)(rng() % 21) - 10;
         SplayTree s(a);
         for (int q = 0; q < 200; q++) {
-            int n = sz(a), op = rng() % 7;
-            ll v = ll(rng() % 21) - 10;
+            int n = (int)a.size(), op = rng() % 7;
+            long long v = (long long)(rng() % 21) - 10;
             if (op == 0) {
                 int i = rng() % (n + 1);
                 s.insert(i, v);
@@ -68,16 +60,16 @@ int main() {
                 CHECK(s.get(L) == a[L]);
             }
             else {
-                vector<ll> piece(a.begin() + L, a.begin() + R + 1);
+                vector<long long> piece(a.begin() + L, a.begin() + R + 1);
                 a.erase(a.begin() + L, a.begin() + R + 1);
-                int i = rng() % (sz(a) + 1);
-                a.insert(a.begin() + i, all(piece));
+                int i = rng() % (a.size() + 1);
+                a.insert(a.begin() + i, piece.begin(), piece.end());
                 s.paste(i, s.cut(L, R));
             }
-            CHECK(s.size() == sz(a));
+            CHECK(s.size() == (int)a.size());
         }
-        vector<ll> got;
-        REP(i, sz(a)) got.pb(s.get(i));
+        vector<long long> got;
+        for (int i = 0; i < (int)a.size(); i++) got.push_back(s.get(i));
         CHECK(got == a);
     }
 

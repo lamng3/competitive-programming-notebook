@@ -5,8 +5,8 @@ using namespace std;
 // nodes 1..n. link needs u and v in different trees, cut needs the edge u-v, query needs u and v connected
 struct LinkCutTree {
     vector<array<int, 2>> ch;
-    vi par, rev;
-    vector<ll> val, sum;
+    vector<int> par, rev;
+    vector<long long> val, sum;
 
     LinkCutTree(int n) : ch(n + 1), par(n + 1), rev(n + 1), val(n + 1), sum(n + 1) {}
 
@@ -36,9 +36,10 @@ struct LinkCutTree {
     }
 
     void splay(int x) {
-        vi path = {x};
-        for (int y = x; !isRoot(y); y = par[y]) path.pb(par[y]);
-        FORD(i, sz(path) - 1, 0) push(path[i]);
+        vector<int> path = {x};
+        for (int y = x; !isRoot(y); y = par[y]) path.push_back(par[y]);
+        reverse(path.begin(), path.end());
+        for (int y : path) push(y);
         while (!isRoot(x)) {
             int p = par[x];
             if (!isRoot(p)) rotate(dir(x) == dir(p) ? p : x);
@@ -86,13 +87,13 @@ struct LinkCutTree {
 
     bool connected(int u, int v) { return findRoot(u) == findRoot(v); }
 
-    ll query(int u, int v) {
+    long long query(int u, int v) {
         makeRoot(u);
         access(v);
         return sum[v];
     }
 
-    void assign(int x, ll v) {
+    void assign(int x, long long v) {
         splay(x);
         val[x] = v;
         pull(x);
